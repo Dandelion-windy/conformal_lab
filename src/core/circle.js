@@ -47,14 +47,6 @@ export function sampleGC(K, n = 240) {
   return pts;
 }
 
-// 在圆上取一点处的正向（逆时针）切方向，用于画方向箭头
-export function onCircle(K, t) {
-  if (K.line) return { z: add(K.p, scale(K.d, t)), d: K.d };
-  const u = cis(t);
-  return { z: add(K.c, scale(u, K.r)), d: mul(u, C(0, 1)) };
-}
-export const gcArg = (K) => (K.line ? arg(K.d) : null);
-
 // 广义圆 C 关于圆 G 反演的像（过 G 的圆心时为直线）
 export function invertGC(G, C) {
   const O = G.c, f = (z) => reflect(G, z), eps = 1e-9 * Math.max(1, G.r);

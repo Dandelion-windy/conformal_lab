@@ -2,8 +2,10 @@
 import * as K from '../../core/complex.js';
 import { h, slider, group, readouts, note, setTex, renderMath, select } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
-import { DomainMesh } from '../../core/mesh.js';
 import { compile } from '../../core/compile.js';
+import { DOMAINS } from '../../core/domains.js';
+import { SourcePlane, PushedLayer, IDENTITY_MAP, exprMap } from '../../components/mapper/layers.js';
+import { domainSource } from '../../components/mapper/source.js';
 import { mapCurve, circlePts } from '../../core/mapcurve.js';
 import { strokePath, dot, label } from '../../core/draw.js';
 import { num } from '../../core/format.js';
@@ -27,12 +29,12 @@ export function mountSchwarz(stage, panel) {
   let fn = compile(FNS[0].e);
   const P = () => ({ a: s.a, t: K.C(s.t) });
   const f = (z) => fn.js(z, P());
-  const zMesh = new DomainMesh(90, 90, [6, 20]), wMesh = new DomainMesh(90, 90, [6, 20]);
-  const param = (u, v) => K.polar(u * 0.999, 2 * Math.PI * v);
-  zMesh.setDomain(param); wMesh.setDomain(param);
-  const Z = zMesh.map(); zMesh.setGeometry(Z.pos, Z.tris);
-  zv.glLayers.push((r, v, dpr) => zMesh.draw(r, v, dpr, { alpha: 0.45 }));
-  wv.glLayers.push((r, v, dpr) => wMesh.draw(r, v, dpr, { alpha: 0.6 }));
+  // 圆盘的源图案：z 平面逐像素画出，w 平面经 f 由 GPU 推前（f 不单叶时，同一点只画一个原像）
+  const zLay = new SourcePlane(zv), wLay = new PushedLayer(wv), src = domainSource(DOMAINS.disk);
+  Object.assign(zLay.pattern, { grid: 'polar', cellA: 0.45 });
+  Object.assign(wLay.pattern, { grid: 'polar', cellA: 0.6 });
+  zLay.setMap(IDENTITY_MAP); zLay.setSource(src);
+  wLay.setMap(exprMap(fn)); wLay.setSource(src);
   const pd = (p, q) => K.abs(K.div(K.sub(p, q), K.sub(K.ONE, K.mul(K.conj(p), q))));
   zv.overlays.push((ctx, v) => {
     strokePath(ctx, v, circlePts(K.ZERO, s.r, 200), { color: '#ffb454', width: 2.6 });
@@ -48,7 +50,7 @@ export function mountSchwarz(stage, panel) {
   });
   const mkH = (key, color, lab, lim, vis = () => true) => ({ color, r: 6, label: lab, hidden: () => !vis(), pos: () => s[key], move: (z) => { s[key] = K.abs(z) > lim ? K.scale(z, lim / K.abs(z)) : z; update(); } });
   zv.handles.push(mkH('p', '#ff6b9a', 'p', 0.98), mkH('q', '#6ee7a8', 'q', 0.98), mkH('a', '#5cc8ff', 'a', 1, () => !!FNS[s.i].a));
-  const sel = select({ label: '函数（都满足 f(0)=0，f(D)⊂D）', options: FNS.map((q, i) => ({ value: i, label: q.e })), value: 0, onChange: (v) => { s.i = +v; fn = compile(FNS[s.i].e); tSl.el.hidden = !FNS[s.i].t1; update(); } });
+  const sel = select({ label: '函数（都满足 f(0)=0，f(D)⊂D）', options: FNS.map((q, i) => ({ value: i, label: q.e })), value: 0, onChange: (v) => { s.i = +v; fn = compile(FNS[s.i].e); wLay.setMap(exprMap(fn)); tSl.el.hidden = !FNS[s.i].t1; update(); } });
   const rSl = slider({ label: '圆周半径 r', min: 0.05, max: 0.99, value: s.r, onInput: (x) => { s.r = x; update(); } });
   const tSl = slider({ label: 't', min: -Math.PI, max: Math.PI, value: s.t, onInput: (x) => { s.t = x; update(); } });
   tSl.el.hidden = true;
@@ -62,7 +64,7 @@ export function mountSchwarz(stage, panel) {
   renderMath(panel);
   function update() {
     setTex(fBox, FNS[s.i].t, true);
-    const B = wMesh.map(f); wMesh.setGeometry(B.pos, B.tris);
+    wLay.uniforms = { u_pa: [s.a.re, s.a.im], u_pt: s.t };
     let m = 0, ratio = 0;
     for (let k = 0; k < 360; k++) {
       const z = K.polar(s.r, (k * Math.PI) / 180), w = f(z);

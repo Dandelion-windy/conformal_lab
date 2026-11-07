@@ -9,8 +9,17 @@ uniform float u_morph; uniform float u_dp; uniform vec4 u_rect;
 uniform int u_mob; uniform vec2 u_ma; uniform vec2 u_mb; uniform vec2 u_mc; uniform vec2 u_md;
 uniform vec2 u_ref; uniform float u_refR; uniform vec3 u_refP;`;
 
+// 源图案的格距：直角网格 CART_STEP，对数极坐标每圈 POLAR_N 格；density = 1, 2, 3
+const CART_STEP = [0.5, 0.25, 0.125];
+const POLAR_N = [16, 24, 48];
+const gridStep = (grid, density) => (grid === 'polar' ? (2 * Math.PI) / POLAR_N[density - 1] : CART_STEP[density - 1]);
+// PATTERN 所需的 uniform
+export const patternUniforms = ({ grid, density, fill, lines, cellA = 0.9 }) => ({
+  u_gmode: grid === 'polar' ? 1 : 0, u_gstep: gridStep(grid, density), u_cells: fill ? 1 : 0, u_glines: lines ? 1 : 0, u_cellA: cellA,
+});
+
 // 源图案：u_gmode 0 直角（格距 u_gstep），1 对数极坐标（ln r 与 θ 的格距均为 u_gstep，格子是“共形正方形”）
-export const PATTERN = `uniform int u_gmode; uniform float u_gstep; uniform int u_cells; uniform int u_glines; uniform float u_cellA; uniform float u_dim;
+const PATTERN =`uniform int u_gmode; uniform float u_gstep; uniform int u_cells; uniform int u_glines; uniform float u_cellA; uniform float u_dim;
 float secArg(vec2 z) { float a = atan(z.y, z.x); return a < 0.0 ? a + TAU : a; }
 float aaLine(float dpx, float width) { return 1.0 - smoothstep(width * 0.5, width * 0.5 + 1.0, dpx); }
 vec3 cellBase(vec2 z) {
@@ -125,12 +134,13 @@ ${xexpr ? `vec3 FXX(vec3 Z) { return ${xexpr}; }
 // 着色用的扩展指数版本：e^z 在 Re z = −1000 处也有正确的模与辐角
 vec3 FtX(vec3 Z) { return u_morph >= 1.0 ? FXX(Z) : xfrom(Ft(xtoc(Z))); }` : ''}`;
 
-// z 平面：背景（f(z) 的域着色）+ 源区域内的图案；源区域外压暗
-export function zShader(expr, mask, xexpr) {
+// z 平面：背景（f(z) 的域着色）+ 源区域内的图案；源区域外压暗。defs 同 meshShaders
+export function zShader(expr, mask, xexpr, defs = '') {
   return `${UNIFORMS}
 out vec4 o;
 ${PRELUDE}
 ${PATTERN}
+${defs}
 ${ft(expr, xexpr)}
 ${WOBJ}
 bool inSrc(vec2 z) { return ${mask}; }
@@ -167,7 +177,8 @@ const VPOS = `vec2 vertW(vec2 z, out float bad) {
   return normalize(W.xy) * exp2(clamp(lr, -126.0, 19.9));
 }`;
 
-export function meshShaders(expr, mask, holo, xexpr) {
+// defs：expr / xexpr 用到的辅助函数（例如分步映射的各个步骤），放在 F 之前
+export function meshShaders(expr, mask, holo, xexpr, defs = '') {
   const vs = `#version 300 es
 precision highp float; precision highp int;
 ${UNIFORMS}
@@ -175,6 +186,7 @@ in vec2 a_z; in float a_h;
 out vec2 v_z; out float v_h; out float v_bad;
 ${COMPLEX_GLSL}
 ${XCOMPLEX_GLSL}
+${defs}
 ${ft(expr, xexpr)}
 ${VPOS}
 void main() {
@@ -196,6 +208,7 @@ in vec2 v_z; in float v_h; in float v_bad;
 out vec4 o;
 ${PRELUDE}
 ${PATTERN}
+${defs}
 ${ft(expr)}
 bool inSrc(vec2 z) { return ${mask}; }
 void main() {

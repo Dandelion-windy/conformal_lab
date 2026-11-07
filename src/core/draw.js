@@ -96,13 +96,6 @@ export function strokePath(ctx, v, pts, { color = '#fff', width = 1.5, casing = 
   ctx.globalAlpha = 1;
 }
 
-export function fillPath(ctx, v, pts, color) {
-  ctx.beginPath();
-  tracePath(ctx, v, pts);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-}
 
 export function dot(ctx, v, z, color = '#fff', r = 4) {
   if (!z || !isFin(z)) return;

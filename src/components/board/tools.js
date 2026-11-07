@@ -14,7 +14,6 @@ export const ACCEPT = {
 };
 export const accepts = (need, g) => !!need && need.some((t) => ACCEPT[t](g));
 
-const has = (picks, t) => picks.some((p) => ACCEPT[t](p.g));
 const find = (picks, t) => picks.find((p) => ACCEPT[t](p.g));
 const pts = (n) => (picks) => (picks.length < n ? ['pt'] : null);
 // 一个点 + 一个 t 类型的对象，顺序任意

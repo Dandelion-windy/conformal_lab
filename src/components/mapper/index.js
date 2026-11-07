@@ -12,7 +12,7 @@ import { Geo } from '../board/index.js';
 import { buildGeoUI } from '../board/ui.js';
 import { PreimageFinder } from './preimage.js';
 import { buildPanel } from './panel.js';
-import { zShader, wBgShader, meshShaders, sphereZShader, sphereWBgShader, sphereMeshShaders } from './shaders.js';
+import { zShader, wBgShader, meshShaders, sphereZShader, sphereWBgShader, sphereMeshShaders, patternUniforms } from './shaders.js';
 import { stereoUnit, invStereoUnit } from '../../core/vec3.js';
 import { resolveSource } from './source.js';
 import { SourceMeshGL } from './gpu.js';
@@ -20,8 +20,6 @@ import { analyze, globalPreimages } from './special.js';
 import { from3, mobiusFlow } from '../../core/mobius.js';
 
 const PCOL = { a: '#5cc8ff', b: '#ffb454', c: '#6ee7a8' };
-export const CART_STEP = [0.5, 0.25, 0.125];
-export const POLAR_N = [16, 24, 48];
 
 export class Mapper {
   constructor(stage, panel, { presets, custom = true, initial, sphere = false }) {
@@ -70,14 +68,12 @@ export class Mapper {
     this.loadPreset(initial || presets[0].id);
     if (sphere) { this.setMode('z', 'sphere'); this.setMode('w', 'sphere'); if (this.preset.play && this.flow) this.ui.playMorph(); }
   }
-  gridStep() { const k = this.state.density - 1; return this.state.grid === 'polar' ? (2 * Math.PI) / POLAR_N[k] : CART_STEP[k]; }
   uniforms() {
     const s = this.state, P = this.P, src = this.src || {};
     return { u_colorMode: s.colorMode, u_bright: s.bright, u_lines: s.bgLines, u_lineStep: s.lineStep,
       u_pa: [P.a.re, P.a.im], u_pb: [P.b.re, P.b.im], u_pc: [P.c.re, P.c.im], u_pt: P.t.re,
       u_morph: s.morph, u_dp: src.dp ?? 0, u_rect: src.rect || [0, 0, 0, 0],
-      u_gmode: s.grid === 'polar' ? 1 : 0, u_gstep: this.gridStep(), u_cells: s.fill ? 1 : 0, u_glines: s.showLines ? 1 : 0,
-      u_cellA: 0.9, u_dim: s.fill && src.key !== 'plane' ? 0.72 : 1, ...this.flowUniforms(), ...this.refUniforms(), ...this.geoUniforms() };
+      ...patternUniforms({ grid: s.grid, density: s.density, fill: s.fill, lines: s.showLines }), u_dim: s.fill && src.key !== 'plane' ? 0.72 : 1, ...this.flowUniforms(), ...this.refUniforms(), ...this.geoUniforms() };
   }
   // w 平面画板曲线（z 平面着色器据此画出它们的原像）
   geoUniforms() {

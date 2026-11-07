@@ -2,8 +2,10 @@
 import * as K from '../../core/complex.js';
 import { h, slider, group, readouts, note, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
-import { DomainMesh } from '../../core/mesh.js';
-import { renderer, mobiusShader, matUniforms } from '../../core/gl.js';
+import { matUniforms } from '../../core/gl.js';
+import { DOMAINS } from '../../core/domains.js';
+import { SourcePlane, PushedLayer, MOBIUS_MAP } from '../../components/mapper/layers.js';
+import { domainSource } from '../../components/mapper/source.js';
 import { mapCurve, circlePts } from '../../core/mapcurve.js';
 import { strokePath, dot, label } from '../../core/draw.js';
 import { cx, num, deg, texCx, texNum } from '../../core/format.js';
@@ -35,21 +37,15 @@ export function mountAutomorphism(stage, panel) {
   const wv = new PlaneView(b2, { title: '<b>w = φ(z)</b>：仍是单位圆盘', unitCircle: true });
   zv.setHome(0, 0, 1.25); wv.setHome(0, 0, 1.25);
   const s = { a: K.C(0.45, 0.25), th: 0, t: 1, p: K.C(-0.4, 0.3), q: K.C(0.2, -0.5), fill: true, bg: true };
-  const zMesh = new DomainMesh(100, 100, [8, 24]), wMesh = new DomainMesh(100, 100, [8, 24]);
-  const param = (u, v) => K.polar(Math.tanh(u * 2.4), 2 * Math.PI * v);
-  zMesh.setDomain(param); wMesh.setDomain(param);
-  const Z = zMesh.map(); zMesh.setGeometry(Z.pos, Z.tris);
-  zv.glLayers.push((r, v, dpr) => s.fill && zMesh.draw(r, v, dpr, { alpha: 0.55 }));
-  wv.glLayers.push((r, v, dpr) => s.fill && wMesh.draw(r, v, dpr, { alpha: 0.55 }));
-  const prog = renderer().ok ? renderer().program(mobiusShader()) : null;
+  // 圆盘的棋盘格：z 平面逐像素画出（背景为 φ(z) 的域着色），w 平面经 φ 推前（背景为 w 的域着色），同色即对应点
+  const zLay = new SourcePlane(zv), wLay = new PushedLayer(wv, { bg: true }), src = domainSource(DOMAINS.disk);
+  for (const lay of [zLay, wLay]) { Object.assign(lay.pattern, { grid: 'polar', lines: false, cellA: 0.55 }); lay.setMap(MOBIUS_MAP); lay.setSource(src); }
+  const look = () => { for (const lay of [zLay, wLay]) { lay.pattern.fill = s.fill; Object.assign(lay.color, { mode: s.bg ? 3 : 4, bright: 0.32 }); } };
   let M = null;
   // 当前（动画中）的 a_t = t·a、θ_t = t·θ
   const cur = () => ({ a: K.scale(s.a, s.t), th: s.th * s.t });
   const mat = () => { const { a, th } = cur(); return K.matMul([K.cis(th), K.ZERO, K.ZERO, K.ONE], [K.ONE, K.neg(a), K.neg(K.conj(a)), K.ONE]); };
   const f = (z) => K.mobius(M, z);
-  const uni = () => ({ u_colorMode: s.bg ? 3 : 4, u_bright: 0.32, u_lines: 0, u_lineStep: 0.25 });
-  zv.bg = () => ({ prog, uniforms: { ...uni(), ...matUniforms(M) } });
-  wv.bg = () => ({ prog, uniforms: { ...uni(), ...matUniforms([K.ONE, K.ZERO, K.ZERO, K.ONE]) } });
   const pd = (p, q) => K.abs(K.div(K.sub(p, q), K.sub(K.ONE, K.mul(K.conj(p), q))));
   zv.overlays.push((ctx, v) => {
     for (const g of GRID) strokePath(ctx, v, g.pts, { color: g.c, width: 1.1, casing: false });
@@ -72,8 +68,8 @@ export function mountAutomorphism(stage, panel) {
   );
   const thSl = slider({ label: '旋转 θ', min: -Math.PI, max: Math.PI, value: s.th, fmt: (x) => deg(x), onInput: (x) => { s.th = x; update(); } });
   const play = player({ max: 1, value: 1, speed: 0.4, onFrame: (t) => { s.t = t; update(); }, fmt: (x) => `${(x * 100).toFixed(0)}%` });
-  const tF = toggle({ label: '区域填充', value: s.fill, onChange: (x) => { s.fill = x; zv.redraw(); wv.redraw(); } });
-  const tB = toggle({ label: '背景着色', value: s.bg, onChange: (x) => { s.bg = x; zv.redraw(); wv.redraw(); } });
+  const tF = toggle({ label: '区域填充', value: s.fill, onChange: (x) => { s.fill = x; look(); zv.redraw(); wv.redraw(); } });
+  const tB = toggle({ label: '背景着色', value: s.bg, onChange: (x) => { s.bg = x; look(); zv.redraw(); wv.redraw(); } });
   const fBox = h('div', { class: 'formula-box' });
   const ro = readouts([['a', 'a'], ['d', "φ′(a)"], ['d0', "φ′(0)"], ['pd', '伪双曲距离'], ['bd', '边界']]);
   panel.append(
@@ -84,7 +80,7 @@ export function mountAutomorphism(stage, panel) {
   renderMath(panel);
   function update() {
     M = mat();
-    const B = wMesh.map(f); wMesh.setGeometry(B.pos, B.tris);
+    zLay.uniforms = wLay.uniforms = matUniforms(M);
     const { a, th } = cur();
     setTex(fBox, `\\varphi(z)=e^{i\\theta}\\frac{z-a}{1-\\bar a z},\\quad a=${texCx(a)},\\ \\theta=${texNum((th * 180) / Math.PI, 1)}^\\circ`, true);
     const d = K.deriv(f, a), d0 = K.deriv(f, K.ZERO);
@@ -96,6 +92,7 @@ export function mountAutomorphism(stage, panel) {
     ro.set('bd', `max | |φ(e^{it})| − 1 | = ${mx.toExponential(1)}`);
     zv.redraw(); wv.redraw();
   }
+  look();
   update();
   return {};
 }

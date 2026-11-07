@@ -1,10 +1,9 @@
 // 源区域：决定把 z 平面的哪一部分映过去。
 // · 整个平面：对数极坐标网格覆盖 e^{-8} < |z| < e^{8}（含 ∞ 附近），不受 z 视图范围限制
 // · 周期函数的基本周期带：避免多个周期的像互相覆盖
-// · 当前 z 视图、或第 05 章的常用区域
+// · 当前 z 视图、或常用区域（core/domains.js）
 import { C, polar, isFin, INF, cis } from '../../core/complex.js';
-import { segment } from '../../core/mapcurve.js';
-import { DOMAINS, DOMAIN_MASK, BCOL, ss } from '../../core/domains.js';
+import { DOMAIN_MASK, BCOL, ss, domainParam } from '../../core/domains.js';
 
 const PI = Math.PI;
 const bd = (pts, k, name) => ({ pts, color: BCOL[k % BCOL.length], name });
@@ -12,7 +11,7 @@ const bd = (pts, k, name) => ({ pts, color: BCOL[k % BCOL.length], name });
 // 周期函数的基本区域（预设中以 src 字段引用）
 const hl = (y, X, n = 800) => { const p = []; for (let i = 0; i <= n; i++) p.push(C(ss(i / n, X, 6), y)); return p; };
 const vl = (x, Y, n = 800) => { const p = []; for (let i = 0; i <= n; i++) p.push(C(x, ss(i / n, Y, 6))); return p; };
-export const FUND = {
+const FUND = {
   hstrip: { name: '一个周期带 −π < Im z < π', mask: 'abs(z.y) < PI && abs(z.x) < 40.0', fundRect: [-40, -PI, 40, PI],
     param: (u, v) => C(ss(u, 40, 8), -PI + 2 * PI * v), n: [320, 90],
     boundary: () => [bd(hl(-PI, 40), 1, 'Im z = −π'), bd(hl(PI, 40), 0, 'Im z = π')] },
@@ -34,14 +33,17 @@ const DOM_CENTER = { disk: () => C(0), uhp: () => C(0, 1), rhp: () => C(1), sect
   halfdisk: () => C(0, 0.5), annulus: (r) => C((1 + r) / 2), exterior: () => INF, rect: () => C(0), slit: () => C(1) };
 const FUND_CENTER = { hstrip: C(0), vsin: C(0), vcos: C(PI / 2), hsinh: C(0), essential: C(0.3) };
 
+// 常用区域作为源（seed 参数化覆盖到 0 与 ∞ 附近）；raw 为未缩放的区域参数
+export function domainSource(d, raw) {
+  const a = domainParam(d, raw);
+  return { key: 'dom:' + d.id, name: d.name, mask: DOMAIN_MASK[d.id] || 'true', dp: a ?? 0, center: DOM_CENTER[d.id]?.(a),
+    build: () => gridMesh((u, v) => d.param(u, v, a), 160, 160), boundary: d.boundary(a), marks: d.marks };
+}
+
 // 解析当前源：返回 { key, name, mask, build() → {z:Float32Array, h:Float32Array, idx:Uint32Array}, boundary, marks, rect? }
 export function resolveSource(M) {
   const s = M.state, d = M.domain;
-  if (d) {
-    const a = d.p ? (s.domP ?? d.p.def) * (d.p.scale || 1) : undefined;
-    return { key: 'dom:' + d.id, name: d.name, mask: DOMAIN_MASK[d.id] || 'true', dp: a ?? 0, center: DOM_CENTER[d.id]?.(a),
-      build: () => gridMesh((u, v) => (d.seed || d.param)(u, v, a), 160, 160), boundary: d.boundary(a), marks: d.marks };
-  }
+  if (d) return domainSource(d, s.domP);
   if (s.dom === 'view') {
     const b = M.zv.bounds();
     return { key: 'view', name: '当前 z 视图', center: C((b.xmin + b.xmax) / 2, (b.ymin + b.ymax) / 2), mask: 'z.x > u_rect.x && z.y > u_rect.y && z.x < u_rect.z && z.y < u_rect.w', rect: [b.xmin, b.ymin, b.xmax, b.ymax],
@@ -56,7 +58,7 @@ export function resolveSource(M) {
 }
 
 // 参数网格 (u,v) ∈ [0,1]²；a_h 取到相邻顶点的最大距离（局部格子尺寸）
-function gridMesh(param, nu, nv) {
+export function gridMesh(param, nu, nv) {
   const N = (nu + 1) * (nv + 1), z = new Float32Array(2 * N), hh = new Float32Array(N), P = new Array(N);
   for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) P[j * (nu + 1) + i] = param(i / nu, j / nv);
   const at = (i, j) => P[Math.min(nv, Math.max(0, j)) * (nu + 1) + Math.min(nu, Math.max(0, i))];

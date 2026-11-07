@@ -2,8 +2,8 @@
 import * as K from '../../core/complex.js';
 import { h, group, note, setTex, tex, renderMath, select, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
-import { DomainMesh } from '../../core/mesh.js';
-import { DOMAINS } from '../../core/domains.js';
+import { matUniforms } from '../../core/gl.js';
+import { DOMAINS, DOMAIN_GRID } from '../../core/domains.js';
 import { compile } from '../../core/compile.js';
 import { mobiusTex } from '../../core/mobius.js';
 import { mapCurve, segment, circlePts } from '../../core/mapcurve.js';
@@ -11,6 +11,8 @@ import { strokePath } from '../../core/draw.js';
 import { texCoef } from '../../core/format.js';
 import { player } from '../common.js';
 import { lineColor } from '../../components/mapper/lines.js';
+import { SourcePlane, PushedLayer, IDENTITY_MAP, MOBIUS_MAP } from '../../components/mapper/layers.js';
+import { domainSource } from '../../components/mapper/source.js';
 
 const PRE = [
   { name: 'Cayley：(z − i)/(z + i)', v: ['1', '-i', '1', 'i'], dom: 'uhp' },
@@ -50,11 +52,11 @@ export function mountDecompose(stage, panel) {
   const zv = new PlaneView(b1, { title: '原像 <b>z</b>', unitCircle: true });
   const wv = new PlaneView(b2, { title: '当前步骤的像', unitCircle: true });
   zv.setHome(0, 0, 2.4); wv.setHome(0, 0, 2.6);
-  const zMesh = new DomainMesh(110, 110), wMesh = new DomainMesh(110, 110);
+  // 演示区域：左边逐像素画出，右边经当前矩阵 Mt 由 GPU 推前（与映射实验室同一套着色器）
+  const zLay = new SourcePlane(zv), wLay = new PushedLayer(wv);
+  zLay.setMap(IDENTITY_MAP); wLay.setMap(MOBIUS_MAP);
   const s = { v: [...PRE[0].v], dom: PRE[0].dom, t: 0, grid: true };
-  let steps = [], mats = [], M = ID, Mt = ID;
-  zv.glLayers.push((r, v, dpr) => zMesh.draw(r, v, dpr));
-  wv.glLayers.push((r, v, dpr) => wMesh.draw(r, v, dpr));
+  let steps = [], mats = [], M = ID, Mt = ID, src = null;
   // 网格线：直角网格 [-3,3]²
   const lines = [];
   for (let k = -6; k <= 6; k++) {
@@ -65,13 +67,13 @@ export function mountDecompose(stage, panel) {
   const g = (z) => K.mobius(Mt, z);
   zv.overlays.push((ctx, v) => {
     if (s.grid) for (const L of lines) strokePath(ctx, v, L.pts, { color: lineColor(L), width: L.axis ? 1.6 : 1, casing: false, alpha: 0.75 });
-    for (const B of DOMAINS[s.dom].boundary()) strokePath(ctx, v, B.pts, { color: B.color, width: 3 });
+    for (const B of src.boundary) strokePath(ctx, v, B.pts, { color: B.color, width: 3 });
     strokePath(ctx, v, unit, { color: '#fff', width: 1.2, dash: [4, 4] });
   });
   wv.overlays.push((ctx, v) => {
     const proj = (w) => v.toScreen(w), o = { W: v.W, H: v.H };
     if (s.grid) for (const L of lines) strokePath(ctx, v, mapCurve(g, L.pts, proj, o), { color: lineColor(L), width: L.axis ? 1.6 : 1, casing: false, alpha: 0.75, maxJump: 80 });
-    for (const B of DOMAINS[s.dom].boundary()) strokePath(ctx, v, mapCurve(g, B.pts, proj, o), { color: B.color, width: 3, maxJump: 80 });
+    for (const B of src.boundary) strokePath(ctx, v, mapCurve(g, B.pts, proj, o), { color: B.color, width: 3, maxJump: 80 });
   });
 
   const inputs = ['a', 'b', 'c', 'd'].map((n, i) => {
@@ -112,10 +114,8 @@ export function mountDecompose(stage, panel) {
       stepper.append(h('div', { class: 'step', onclick: () => { play.stop(); play.set((i + 1) / steps.length); } }, h('span', { class: 'st-name' }, st.name), h('span', { class: 'st-tex', html: tex(`\\zeta_{${i + 1}}`) })));
     });
     const D = DOMAINS[s.dom];
-    const param = (u, v) => D.param(u, v, D.p ? D.p.def * (D.p.scale || 1) : undefined);
-    zMesh.cells = wMesh.cells = D.cells;
-    zMesh.setDomain(param); wMesh.setDomain(param);
-    const A = zMesh.map(); zMesh.setGeometry(A.pos, A.tris);
+    src = domainSource(D);
+    for (const lay of [zLay, wLay]) { lay.pattern.grid = DOMAIN_GRID[s.dom]; lay.setSource(src); }
     zv.setHome(...D.view);
     setT(play.value);
   }
@@ -123,7 +123,7 @@ export function mountDecompose(stage, panel) {
     s.t = t;
     const n = steps.length, x = Math.min(n - 1e-9, t * n), i = Math.floor(x), u = x - i;
     Mt = t >= 1 ? mats[n] : K.matMul(steps[i].flow(u), mats[i]);
-    const B = wMesh.map(g); wMesh.setGeometry(B.pos, B.tris);
+    wLay.uniforms = matUniforms(Mt);
     [...stepper.querySelectorAll('.step')].forEach((el, k) => el.classList.toggle('on', k === Math.round(t * n)));
     const cur = t >= 1 ? n : x <= 1e-9 ? 0 : i + 1;
     const st = steps[cur - 1];

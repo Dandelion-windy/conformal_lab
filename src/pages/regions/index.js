@@ -2,10 +2,11 @@
 import * as K from '../../core/complex.js';
 import { h, select, group, note, tex, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
-import { DomainMesh, intersectTris } from '../../core/mesh.js';
+import { compile } from '../../core/compile.js';
 import { mapCurve } from '../../core/mapcurve.js';
 import { strokePath, dot, label } from '../../core/draw.js';
-import { lineColor } from '../../components/mapper/lines.js';
+import { PushedLayer, stageMap, stageMixMap } from '../../components/mapper/layers.js';
+import { gridMesh } from '../../components/mapper/source.js';
 import { shell, theory, player } from '../common.js';
 import { EXAMPLES } from './examples.js';
 
@@ -63,19 +64,17 @@ $$F(z)=\\begin{cases}f(z),&z\\in D^+\\cup\\sigma\\\\ \\overline{f(\\bar z)},&\\b
 function mountChain(stage, panel, initial) {
   const b1 = h('div'), b2 = h('div'); stage.append(b1, b2);
   const L = new PlaneView(b1, { title: ' ' }), R = new PlaneView(b2, { title: ' ' });
-  const meshL = new DomainMesh(111, 111), meshR = new DomainMesh(111, 111);
-  L.glLayers.push((r, v, dpr) => meshL.draw(r, v, dpr));
-  R.glLayers.push((r, v, dpr) => meshR.draw(r, v, dpr));
-  const s = { ex: null, k: 1, t: 1, grid: true, all: false };
-  let comps = [], stageGeo = [], gridLines = [], morphTris = null;
-  // 第 k 阶段：前 k 个映射的复合
-  const compose = (k) => (z) => { for (let i = 0; i < k; i++) { z = s.ex.steps[i].f(z); if (!K.isFin(z)) return z; } return z; };
+  // 两侧都是同一个源区域网格经 GPU 推前：左边是前 a 步，右边是前 b 步（或二者的插值）
+  const layL = new PushedLayer(L), layR = new PushedLayer(R);
+  const s = { ex: null, fns: [], k: 1, t: 1, all: false };
+  let comps = [], mapB = null, mixAB = null;
+  // 第 k 阶段：前 k 步的复合（CPU 端，用于边界与标记点）
+  const compose = (k) => (z) => { for (let i = 0; i < k; i++) { z = s.fns[i].js(z, {}); if (!K.isFin(z)) return z; } return z; };
   const fromIdx = () => (s.all ? 0 : s.k - 1), toIdx = () => (s.all ? s.ex.steps.length : s.k);
   const morph = (z) => { const a = comps[fromIdx()](z), b = comps[toIdx()](z); return s.t >= 1 ? b : K.lerp(a, b, s.t); };
 
   const drawStage = (fn) => (ctx, v) => {
     const proj = (w) => v.toScreen(w), o = { W: v.W, H: v.H };
-    if (s.grid) for (const G of gridLines) strokePath(ctx, v, mapCurve(fn(), G.pts, proj, o), { color: lineColor(G), width: 1, casing: false, alpha: 0.6, maxJump: 90 });
     for (const [pts, color] of s.ex.boundary) strokePath(ctx, v, mapCurve(fn(), pts, proj, o), { color, width: 3, maxJump: 90 });
     for (const [z, t] of s.ex.marks) {
       const w = fn()(z);
@@ -92,7 +91,7 @@ function mountChain(stage, panel, initial) {
   const play = player({ max: 1, value: 1, speed: 0.45, onFrame: (t) => { s.t = t; applyMorph(); }, fmt: (v) => `${(v * 100).toFixed(0)}%` });
   const stepNote = h('div', { class: 'note' });
   const ansBox = h('div', { class: 'formula-box' });
-  const tGrid = toggle({ label: '坐标网格', value: s.grid, onChange: (v) => { s.grid = v; L.redraw(); R.redraw(); } });
+  const tGrid = toggle({ label: '坐标网格', value: true, onChange: (v) => { layL.pattern.lines = layR.pattern.lines = v; L.redraw(); R.redraw(); } });
   const legend = h('div', { class: 'legend' });
   panel.append(
     group('题目', exSel.el, qBox),
@@ -107,18 +106,10 @@ function mountChain(stage, panel, initial) {
     s.ex = ex; exSel.value = ex.id; s.k = 1; s.all = false;
     qBox.innerHTML = `<b class="c-amb">${ex.tag}</b>　${ex.q}`;
     renderMath(qBox);
+    s.fns = ex.steps.map((st) => compile(st.expr));
     comps = Array.from({ length: ex.steps.length + 1 }, (_, k) => compose(k));
-    meshL.cells = meshR.cells = ex.cells;
-    meshL.setDomain(ex.param); meshR.setDomain(ex.param);
-    stageGeo = comps.map((f) => meshL.map(f));
-    // 网格线：参数 u、v 的等值线
-    gridLines = [];
-    const n = 8;
-    for (let i = 1; i < n; i++) {
-      const pu = [], pv = [];
-      for (let j = 0; j <= 240; j++) { pu.push(ex.param(i / n, j / 240)); pv.push(ex.param(j / 240, i / n)); }
-      gridLines.push({ pts: pu, fam: 0, t: i / n }, { pts: pv, fam: 1, t: i / n });
-    }
+    const src = { mask: ex.mask, dp: 0 }, data = gridMesh(ex.param, 160, 160);
+    for (const lay of [layL, layR]) { lay.pattern.grid = ex.grid; lay.setSource(src, data); }
     legend.innerHTML = ex.boundary.map(([, c, name]) => `<span><i style="background:${c}"></i>${name}</span>`).join('');
     setTex(ansBox, ex.answer, true);
     buildStepper();
@@ -150,20 +141,14 @@ function mountChain(stage, panel, initial) {
     L.setHome(...vA); R.setHome(...vB);
     stepNote.innerHTML = s.all ? `复合全部 ${n} 步，得到 $w=f(z)$。比较左右两图：同色的格子、同色的边界互相对应。` : `$${ex.steps[k - 1].tex}$<br>${ex.steps[k - 1].note}`;
     renderMath(stepNote);
-    const A = stageGeo[a];
-    meshL.setGeometry(A.pos, A.tris);
-    morphTris = intersectTris(A.tris, stageGeo[b].tris);
+    layL.setMap(stageMap(s.fns, a));
+    mapB = stageMap(s.fns, b); mixAB = stageMixMap(s.fns, a, b);
     play.stop(); s.t = 1; play.set(1, false);
     applyMorph();
   }
   function applyMorph() {
-    const A = stageGeo[fromIdx()], B = stageGeo[toIdx()], t = s.t;
-    if (t >= 1) meshR.setGeometry(B.pos, B.tris);
-    else {
-      const pos = new Float32Array(A.pos.length);
-      for (let i = 0; i < pos.length; i++) pos[i] = A.pos[i] + (B.pos[i] - A.pos[i]) * t;
-      meshR.setGeometry(pos, morphTris);
-    }
+    layR.setMap(s.t >= 1 ? mapB : mixAB);
+    layR.uniforms = { u_pt: s.t };
     L.redraw(); R.redraw();
   }
   load(initial || EXAMPLES[0].id);

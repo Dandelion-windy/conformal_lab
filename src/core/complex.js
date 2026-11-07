@@ -6,7 +6,6 @@ export const I = C(0, 1);
 export const INF = C(Infinity, Infinity);
 
 export const isFin = (z) => Number.isFinite(z.re) && Number.isFinite(z.im);
-export const isInf = (z) => !isFin(z) && !(Number.isNaN(z.re) && Number.isNaN(z.im));
 export const add = (a, b) => C(a.re + b.re, a.im + b.im);
 export const sub = (a, b) => C(a.re - b.re, a.im - b.im);
 export const mul = (a, b) => C(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);

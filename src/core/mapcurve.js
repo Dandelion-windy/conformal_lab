@@ -53,4 +53,3 @@ export function circlePts(c, r, n = 96, t0 = 0, t1 = 2 * Math.PI) {
   }
   return pts;
 }
-export const planeProj = (view) => (w) => view.toScreen(w);
