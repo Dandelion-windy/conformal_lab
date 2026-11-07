@@ -15,7 +15,6 @@ const CARDS = {
   regions: '十道典型例题：透镜形、月牙形、割缝区域、半带形……逐步展示每一个初等映射的作用。',
   disk: '圆盘自同构与双曲几何，施瓦茨引理与施瓦茨–皮克引理的可视化验证。',
   sc: '数值计算的 Schwarz–Christoffel 映射：三角形、矩形、台阶、L 形、正多边形，拖动前顶点观察形状变化。',
-  flow: '复势与流线、绕圆柱与马格努斯效应、茹科夫斯基翼型与 Kutta 条件、用共形映射求温度场。',
   sheet: '初等映射、标准区域映射、核心定理、解题步骤的汇总表。',
 };
 
@@ -27,7 +26,7 @@ export default {
       h('div', {},
         h('div', { class: 'eyebrow', style: 'color:var(--accent);font:600 12px var(--mono);letter-spacing:.16em' }, 'COMPLEX ANALYSIS · CONFORMAL MAPPINGS'),
         h('h1', { html: '用眼睛理解<br><span>共形映射</span>' }),
-        h('p', { class: 'lead', html: '本页把复变函数中“共形映射”一章的主要内容做成可交互的图形：从黎曼球面与扩充复平面出发，到导数的几何意义、反演、分式线性变换、初等函数的映射、区域之间的映射、施瓦茨引理、Schwarz–Christoffel 公式，以及流体与温度场中的应用。所有图形实时计算，可以拖动、缩放、改参数。' }),
+        h('p', { class: 'lead', html: '本页把复变函数中“共形映射”一章的主要内容做成可交互的图形：从黎曼球面与扩充复平面出发，到导数的几何意义、反演、分式线性变换、初等函数的映射、区域之间的映射、施瓦茨引理、Schwarz–Christoffel 公式。所有图形实时计算，可以拖动、缩放、改参数。' }),
         h('div', { class: 'btn-row', style: 'margin-top:16px' },
           h('a', { class: 'btn primary', href: '#sphere', style: 'text-decoration:none' }, '从黎曼球面开始 →'),
           h('a', { class: 'btn', href: '#lab', style: 'text-decoration:none' }, '打开映射实验室'),

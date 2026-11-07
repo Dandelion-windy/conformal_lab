@@ -133,7 +133,7 @@ export const EXAMPLES = [
   },
   {
     id: 'cylinder', title: '上半平面去掉半圆盘 → 上半平面', tag: '茹科夫斯基',
-    q: '$D=\\{\\operatorname{Im}z>0,\\ |z|>1\\}$。求 $D$ 到上半平面的共形映射。（这正是第 10 章中绕圆柱流动的区域）',
+    q: '$D=\\{\\operatorname{Im}z>0,\\ |z|>1\\}$。求 $D$ 到上半平面的共形映射。',
     param: (u, v) => K.polar(Math.exp(es(u, LOG, 3)), PI * (0.0005 + 0.999 * v)), mask: 'z.y > 0.0 && dot(z, z) > 1.0', grid: 'polar', view: [0, 1.2, 2.6],
     boundary: [[segment(C(R), C(1), 400), B[2], '[1,+∞)'], [arc(C(0), 1, 0, PI), B[0], '上半圆周'], [segment(C(-1), C(-R), 400), B[1], '(−∞,−1]']],
     marks: [[C(1), '1'], [C(-1), '−1'], [C(0, 1), 'i']],

@@ -17,7 +17,6 @@ import lab from './pages/lab.js';
 import regions from './pages/regions/index.js';
 import disk from './pages/disk/index.js';
 import sc from './pages/sc/index.js';
-import flow from './pages/flow/index.js';
 import sheet from './pages/sheet/index.js';
 
 const CHAPTERS = [
@@ -34,9 +33,8 @@ const CHAPTERS = [
   { id: 'regions', num: '07', title: '区域的共形映射', sub: '典型例题 · 分步演示', mod: regions },
   { id: 'disk', num: '08', title: '单位圆盘', sub: '自同构 · 施瓦茨引理', mod: disk },
   { id: 'sc', num: '09', title: 'Schwarz–Christoffel', sub: '上半平面 → 多边形', mod: sc },
-  { sec: '应用与总结' },
-  { id: 'flow', num: '10', title: '物理应用', sub: '复势 · 绕流 · 翼型', mod: flow },
-  { id: 'sheet', num: '11', title: '公式速查', sub: '常用映射与定理', mod: sheet },
+  { sec: '总结' },
+  { id: 'sheet', num: '10', title: '公式速查', sub: '常用映射与定理', mod: sheet },
 ];
 
 const nav = document.getElementById('nav');

@@ -1,4 +1,4 @@
-// 第 11 章 公式速查：常用映射、区域对照、定理
+// 第 10 章 公式速查：常用映射、区域对照、定理
 import { h, renderMath } from '../../core/ui.js';
 
 const open = (id, text = '在实验室中打开') => `<a class="open-lab" href="#lab/${id}">${text} →</a>`;
@@ -62,7 +62,6 @@ const FORMULAS = `
 <tr><td>不动点</td><td>$cz^2+(d-a)z-b=0$；$\\dfrac{w-p}{w-q}=k\\dfrac{z-p}{z-q}$ 或 $\\dfrac1{w-p}=\\dfrac1{z-p}+\\beta$</td></tr>
 <tr><td>Jacobi 行列式</td><td>$J=u_xv_y-u_yv_x=|f'(z)|^2$</td></tr>
 <tr><td>像的面积与长度</td><td>$A=\\iint_D|f'|^2dxdy$，$L=\\int_C|f'||dz|$</td></tr>
-<tr><td>复势</td><td>$W=\\varphi+i\\psi$，$\\overline v=W'(z)$；绕圆柱 $U(z+\\frac{R^2}{z})+\\frac{\\Gamma}{2\\pi i}\\log z$</td></tr>
 </table>`;
 
 const STEPS = `
@@ -95,15 +94,15 @@ const EXERCISES = [
   ['设 $f$ 在 $|z|<1$ 内解析，$|f(z)|<1$，$f(0)=0$，$f(\\frac12)=\\frac12$。求 $f$。',
    '$|f(\\frac12)|=|\\frac12|$，施瓦茨引理的等号成立，$f(z)=e^{i\\theta}z$，再由 $f(\\frac12)=\\frac12$ 得 $f(z)=z$。', 'disk/schwarz'],
   ['用共形映射求上半平面内的调和函数 $u$，使 $u(x,0)=1\\ (x<0)$，$u(x,0)=0\\ (x>0)$。',
-   '$u=\\frac1\\pi\\arg z=\\frac1\\pi\\operatorname{Im}\\operatorname{Log}z$。（$\\operatorname{Log}z$ 解析，其虚部调和，边界值正确。）', 'flow/heat'],
+   '$u=\\frac1\\pi\\arg z=\\frac1\\pi\\operatorname{Im}\\operatorname{Log}z$。（$\\operatorname{Log}z$ 解析，其虚部调和，边界值正确。）', null],
 ];
-const EX_HTML = EXERCISES.map(([q, a, link], i) => `<details class="ex-item"><summary><b>${i + 1}.</b> ${q}</summary><div class="ex-ans">${a}<br><a class="open-lab" href="#${link}">看图 →</a></div></details>`).join('');
+const EX_HTML = EXERCISES.map(([q, a, link], i) => `<details class="ex-item"><summary><b>${i + 1}.</b> ${q}</summary><div class="ex-ans">${a}${link ? `<br><a class="open-lab" href="#${link}">看图 →</a>` : ''}</div></details>`).join('');
 
 export default {
   mount(root) {
     const card = (title, tag, html, wide = false) => h('div', { class: `card ${wide ? 'wide' : ''}`, html: `<h3><span class="tag">${tag}</span>${title}</h3>${html}` });
     root.append(
-      h('header', { class: 'page-head' }, h('div', {}, h('div', { class: 'eyebrow' }, 'Chapter 11'), h('h1', {}, '公式速查'),
+      h('header', { class: 'page-head' }, h('div', {}, h('div', { class: 'eyebrow' }, 'Chapter 10'), h('h1', {}, '公式速查'),
         h('p', { class: 'lead' }, '复习用的汇总表。点击“在实验室中打开”可直接查看对应映射的图像。'))),
       h('div', { class: 'theory', style: 'margin-top:0' },
         card('初等映射', '映射', MAPS, true),
