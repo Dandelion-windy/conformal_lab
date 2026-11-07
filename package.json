@@ -1,0 +1,14 @@
+{
+  "name": "conformal-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "复变函数 · 共形映射几何直观实验室（单文件 HTML 构建）",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "katex": "^0.19.1"
+  }
+}

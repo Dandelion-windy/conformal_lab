@@ -1,0 +1,37 @@
+// 预设映射（一）：线性、反演、分式线性、幂与根式、指数与对数
+// 字段：expr 表达式；dom 默认区域；grid 网格；zv/wv 视图 [cx, cy, 半宽]；P 参数默认值；ex 示例区域；elem 是否出现在"初等函数"章节
+import { C } from '../../core/complex.js';
+
+export const PRESETS_A = [
+  { id: 'affine', g: '线性变换', name: 'w = az + b', expr: 'a*z+b', grid: 'cart', zv: [0, 0, 3], wv: [0, 0, 4], P: { a: C(1.2, 0.6), b: C(0.5, 0.3) },
+    info: `拖动 <b class="c-acc">a</b>、<b class="c-amb">b</b>。$w=az+b$ 先旋转 $\\arg a$、伸缩 $|a|$ 倍，再平移 $b$。它是整个平面上的相似变换：<b>直线 → 直线、圆 → 圆</b>，处处 $w'=a\\ne0$，所以处处共形。` },
+  { id: 'inv', g: '线性变换', name: 'w = 1/z（反演）', expr: '1/z', grid: 'polar', zv: [0, 0, 2.5], wv: [0, 0, 2.5], elem: true,
+    ex: [{ label: '单位圆盘 → 外部', dom: 'disk' }, { label: '上半平面 → 下半平面', dom: 'uhp' }, { label: '直角网格', dom: 'none', grid: 'cart' }],
+    info: `$w=\\dfrac1z$ 可分解为<b>关于单位圆的反演</b> $z\\mapsto 1/\\bar z$ 与<b>关于实轴的对称</b>。$|w|=1/|z|$，$\\arg w=-\\arg z$。把 $0\\leftrightarrow\\infty$ 互换；过原点的直线 → 过原点的直线；<b>不过原点的直线 → 过原点的圆</b>，反之亦然。观察直角网格：横线、竖线都变成过 $0$ 的圆，且两族圆仍然正交。` },
+  { id: 'cayley', g: '分式线性', name: 'w = (z − i)/(z + i)', expr: '(z-i)/(z+i)', dom: 'uhp', zv: [0, 1.2, 2.6], wv: [0, 0, 1.5], elem: true,
+    ex: [{ label: '上半平面 → 圆盘', dom: 'uhp' }, { label: '直角网格', dom: 'none', grid: 'cart' }],
+    info: `<b>Cayley 变换</b>：把上半平面映成单位圆盘，$i\\mapsto0$，$0\\mapsto-1$，$1\\mapsto -i$，$\\infty\\mapsto1$。原理：$i$ 与 $-i$ 关于实轴对称，分式线性变换保对称性，所以像点 $0$ 与 $\\infty$ 关于像圆对称，像圆只能是以 0 为心的圆。实轴上 $|z-i|=|z+i|$，故 $|w|=1$。` },
+  { id: 'cayleyInv', g: '分式线性', name: 'w = i(1 + z)/(1 − z)', expr: 'i*(1+z)/(1-z)', dom: 'disk', zv: [0, 0, 1.6], wv: [0, 1.5, 3], elem: true,
+    info: `Cayley 变换的逆：单位圆盘 → 上半平面。$0\\mapsto i$，$1\\mapsto\\infty$，$-1\\mapsto 0$。圆周上的点 $e^{i\\theta}$ 映为实数 $-\\cot\\frac\\theta2$。` },
+  { id: 'diskAut', g: '分式线性', name: 'w = (z − a)/(1 − āz)', expr: '(z-a)/(1-conj(a)*z)', dom: 'disk', zv: [0, 0, 1.5], wv: [0, 0, 1.5], P: { a: C(0.45, 0.25) }, elem: true,
+    info: `单位圆盘到自身的共形自同构（再乘 $e^{i\\theta}$ 即全部）。拖动 <b class="c-acc">a</b>：$a\\mapsto 0$，单位圆周映为自身。$a$ 与 $1/\\bar a$ 关于单位圆对称，后者被送到 $\\infty$。注意同心圆族的像不再同心——它们是关于 $0$ 与 $\\infty$ 的"阿波罗尼斯圆"。` },
+  { id: 'twoPts', g: '分式线性', name: 'w = (z − a)/(z − b)', expr: '(z-a)/(z-b)', grid: 'polar', zv: [0, 0, 3], wv: [0, 0, 3], P: { a: C(-1, 0), b: C(1, 0) },
+    info: `把 <b class="c-acc">a</b> 送到 $0$、<b class="c-amb">b</b> 送到 $\\infty$。在 $w$ 平面看极坐标网格的<b>原像</b>（左侧着色背景中的白线）：过 $a,b$ 的圆（<b>Steiner 圆</b>）↔ 过原点的射线；以 $a,b$ 为对称点的<b>阿波罗尼斯圆</b> $\\left|\\frac{z-a}{z-b}\\right|=k$ ↔ 同心圆。打开“背景线：极坐标”观察。` },
+  { id: 'sq', g: '幂函数与根式', name: 'w = z²', expr: 'z^2', dom: 'sector', domP: 0.5, zv: [0.8, 0.8, 1.8], wv: [0, 1, 3], elem: true,
+    ex: [{ label: '第一象限 → 上半平面', dom: 'sector', domP: 0.5 }, { label: '上半平面 → 去掉正实轴', dom: 'uhp' }, { label: '直角网格 → 抛物线', dom: 'none', grid: 'cart' }, { label: '极坐标网格', dom: 'none', grid: 'polar' }],
+    info: `$w=z^2$：$|w|=|z|^2$，$\\arg w=2\\arg z$，<b>角度加倍</b>。角形域 $0<\\arg z<\\frac\\pi2$ → 上半平面。直线 $x=c$ 与 $y=c$ 映成两族<b>正交的抛物线</b> $v^2=4c^2(c^2\\mp u)$。在 $z=0$ 处 $w'=0$，共形性失效：过原点的两条射线夹角被放大 2 倍。` },
+  { id: 'zn', g: '幂函数与根式', name: 'w = zⁿ', expr: 'z^3', grid: 'polar', dom: 'sector', domP: 1 / 3, zv: [0.6, 0.5, 1.6], wv: [0, 0.8, 2.4], elem: true,
+    ex: [{ label: '角形域 0<arg z<π/3', dom: 'sector', domP: 1 / 3 }, { label: '单位圆盘（三重覆盖）', dom: 'disk' }],
+    info: `$w=z^n$ 把角形域 $0<\\arg z<\\frac{\\pi}{n}$ 映为上半平面，把 $0<\\arg z<\\frac{2\\pi}{n}$ 映为去掉正实轴的平面。在单位圆盘上它是 $n$ 对 1 的（非单叶）：每个 $w$ 有 $n$ 个原像——在右图中移动鼠标，左图会标出所有原像。` },
+  { id: 'zalpha', g: '幂函数与根式', name: 'w = z^α（α 可调）', expr: 'z^t', dom: 'sector', domP: 0.5, zv: [1, 1, 2], wv: [0, 1, 3], P: { t: 2, tRange: [0.2, 4] }, elem: true,
+    info: `一般幂 $z^\\alpha=e^{\\alpha\\log z}$（取主值，割线为负实轴）。它把角形域 $0<\\arg z<\\theta_0$ 映为 $0<\\arg w<\\alpha\\theta_0$。解题中常用 $w=z^{\\pi/\\theta_0}$ 把张角为 $\\theta_0$ 的角形域“撑开”成上半平面。调节滑块 t（即 α）观察。` },
+  { id: 'sqrt', g: '幂函数与根式', name: 'w = √z（主值）', expr: 'sqrt(z)', dom: 'slit', zv: [0, 0, 3], wv: [0.8, 0, 2], elem: true,
+    ex: [{ label: '割破平面 → 右半平面', dom: 'slit' }, { label: '上半平面 → 第一象限', dom: 'uhp' }, { label: '直角网格', dom: 'none', grid: 'cart' }],
+    info: `$\\sqrt z=\\sqrt{|z|}\\,e^{i\\arg z/2}$，$-\\pi<\\arg z\\le\\pi$。把沿负实轴割开的平面映为右半平面，上半平面 → 第一象限。割线两岸（两种颜色）分别映到正、负虚轴——这就是“支割线”：在割线处函数值跳跃，左图背景颜色在负实轴处的断裂也显示了这一点。` },
+  { id: 'exp', g: '指数与对数', name: 'w = eᶻ', expr: 'exp(z)', src: 'hstrip', dom: 'strip', domP: 1, zv: [0, 1.6, 3.2], wv: [0, 1, 4], elem: true,
+    ex: [{ label: '带形 0<Im z<π → 上半平面', dom: 'strip', domP: 1 }, { label: '带形 0<Im z<2π → 割破平面', dom: 'strip', domP: 2 }, { label: '矩形 → 扇环', dom: 'rect', domP: 1 }, { label: '直角网格', dom: 'none', grid: 'cart' }],
+    info: `$e^{x+iy}=e^x e^{iy}$：<b>水平线 $y=c$ → 射线 $\\arg w=c$</b>，<b>竖直线 $x=c$ → 圆周 $|w|=e^c$</b>。带形 $0<\\operatorname{Im}z<h$（$h\\le2\\pi$）→ 角形域 $0<\\arg w<h$；特别地 $0<\\operatorname{Im}z<\\pi$ → 上半平面。$e^z$ 以 $2\\pi i$ 为周期，在任何宽度不超过 $2\\pi$ 的水平带形内单叶。` },
+  { id: 'log', g: '指数与对数', name: 'w = Log z（主值）', expr: 'log(z)', dom: 'uhp', grid: 'polar', zv: [0, 1.2, 2.6], wv: [0, 1.6, 3.2], elem: true,
+    ex: [{ label: '上半平面 → 带形', dom: 'uhp' }, { label: '割破平面 → 带形 |Im w|<π', dom: 'slit' }, { label: '圆环 → 矩形', dom: 'annulus', domP: 0.3 }, { label: '极坐标网格', dom: 'none', grid: 'polar' }],
+    info: `$\\operatorname{Log} z=\\ln|z|+i\\arg z$ 是 $e^z$ 的反函数（主值）。<b>同心圆 → 竖直线，射线 → 水平线</b>：极坐标网格变成直角网格。上半平面 → 带形 $0<\\operatorname{Im}w<\\pi$；圆环 $r<|z|<1$（沿负实轴割开）→ 矩形 $\\ln r<\\operatorname{Re}w<0,\\ |\\operatorname{Im}w|<\\pi$。` },
+];

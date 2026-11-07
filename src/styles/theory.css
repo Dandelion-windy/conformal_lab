@@ -1,0 +1,63 @@
+.theory { margin-top: 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; }
+.theory-title { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; letter-spacing: 0.16em; margin-top: 4px; }
+.theory-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; min-width: 0;
+}
+.card.wide { grid-column: 1 / -1; }
+.card h3 { font-size: 16.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.card h3 .tag { font: 600 11px var(--mono); letter-spacing: 0.1em; padding: 2px 7px; border-radius: 6px; background: rgba(92, 200, 255, 0.12); color: var(--accent); }
+.card h4 { font-size: 14.5px; margin: 12px 0 4px; color: #cfd8f0; }
+.card p, .card li { color: #c9d1e6; }
+.card ul, .card ol { padding-left: 1.3em; margin: 0.4em 0; }
+.card li { margin: 0.2em 0; }
+.card li::marker { color: var(--accent); }
+.thm, .defn, .warnbox, .ex, .tip {
+  border-radius: 10px; padding: 9px 12px; margin: 10px 0; border: 1px solid var(--line);
+  background: var(--bg2);
+}
+.thm { border-left: 3px solid var(--violet); }
+.defn { border-left: 3px solid var(--accent); }
+.warnbox { border-left: 3px solid var(--accent2); }
+.ex { border-left: 3px solid var(--green); }
+.tip { border-left: 3px solid var(--pink); }
+.thm::before, .defn::before, .warnbox::before, .ex::before, .tip::before {
+  display: block; font-size: 12px; font-weight: 650; letter-spacing: 0.12em; margin-bottom: 2px;
+}
+.thm::before { content: attr(data-t); color: var(--violet); }
+.defn::before { content: attr(data-t); color: var(--accent); }
+.warnbox::before { content: attr(data-t); color: var(--accent2); }
+.ex::before { content: attr(data-t); color: var(--green); }
+.tip::before { content: attr(data-t); color: var(--pink); }
+.card table { border-collapse: collapse; width: 100%; font-size: 13.5px; margin: 8px 0; }
+.card th, .card td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: middle; }
+.card th { color: var(--muted); font-weight: 600; font-size: 12.5px; letter-spacing: 0.06em; background: var(--bg2); }
+.card tr:hover td { background: rgba(120, 150, 230, 0.04); }
+.open-lab { font-size: 12px; white-space: nowrap; }
+
+/* 首页 */
+.hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: center; min-height: 420px; }
+.hero h1 { font-size: 38px; line-height: 1.2; letter-spacing: 0.02em; }
+.hero h1 span { background: linear-gradient(90deg, #5cc8ff, #a78bfa 55%, #ff6b9a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .lead { font-size: 15.5px; color: var(--muted); max-width: 640px; }
+.hero-view { height: 440px; }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 22px; }
+.home-card {
+  display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; color: var(--text); transition: transform 0.15s, border-color 0.15s;
+}
+.home-card:hover { text-decoration: none; border-color: var(--accent); transform: translateY(-2px); }
+.home-card .hc-num { font: 600 12px var(--mono); color: var(--accent); letter-spacing: 0.1em; }
+.home-card h3 { font-size: 16px; margin: 3px 0 4px; }
+.home-card p { color: var(--muted); font-size: 13px; margin: 0; }
+.howto { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 18px; }
+.howto div { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--muted); }
+.howto b { color: var(--text); display: block; margin-bottom: 2px; }
+@media (max-width: 1180px) { .hero { grid-template-columns: 1fr; } .theory { grid-template-columns: 1fr; } }
+.ex-item { border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); margin: 8px 0; }
+.ex-item summary { cursor: pointer; padding: 9px 12px; list-style: none; color: #d7deef; }
+.ex-item summary::-webkit-details-marker { display: none; }
+.ex-item summary::before { content: '▸'; color: var(--accent); margin-right: 8px; display: inline-block; transition: transform 0.15s; }
+.ex-item[open] summary::before { transform: rotate(90deg); }
+.ex-ans { padding: 2px 14px 12px 32px; color: var(--muted); border-top: 1px dashed var(--line); margin-top: 2px; padding-top: 8px; }
