@@ -1,4 +1,4 @@
-// 第 9 章 · 标签 1：基本平面势流（复势 W = φ + iψ）
+// 第 10 章 · 标签 1：基本平面势流（复势 W = φ + iψ）
 import * as K from '../../core/complex.js';
 import { h, select, slider, toggle, group, readouts, note, setTex, renderMath, button } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
@@ -29,7 +29,7 @@ const PRE = [
     glsl: 'bool solid(vec2 z) { return dot(z, z) < 1.0; }', js: (x, y) => x * x + y * y < 1,
     info: '驻点满足 $\\sin\\theta=\\frac{\\Gamma}{4\\pi UR}$：$|\\Gamma|<4\\pi UR$ 时两个驻点在圆周上；$|\\Gamma|=4\\pi UR$ 时合并；更大时离开圆柱。<b>Kutta–Joukowski 定理</b>：升力 $L=-\\rho U\\Gamma$（垂直于来流），这就是马格努斯效应。' },
   { name: '源汇对', e: 't/(2*pi)*log((z+1)/(z-1))', tex: 'W=\\frac{m}{2\\pi}\\log\\frac{z+1}{z-1}', t: { label: '强度 m', min: 0.5, max: 8, def: 4 }, dpsi: (t) => t / 16, view: [0, 0, 2.5],
-    info: '源在 $-1$，汇在 $1$。流线是过 $\\pm1$ 的圆弧（施泰纳圆），等势线是以 $\\pm1$ 为对称点的阿波罗尼斯圆——与第 03 章分式线性变换 $\\frac{z+1}{z-1}$ 的不变圆族一致。' },
+    info: '源在 $-1$，汇在 $1$。流线是过 $\\pm1$ 的圆弧（施泰纳圆），等势线是以 $\\pm1$ 为对称点的阿波罗尼斯圆——与第 04 章分式线性变换 $\\frac{z+1}{z-1}$ 的不变圆族一致。' },
   { name: '兰金半体', e: 'z+t/(2*pi)*log(z)', tex: 'W=Uz+\\frac{m}{2\\pi}\\log z', t: { label: '源强度 m', min: 0.5, max: 8, def: 3 }, dpsi: () => 0.2, view: [0.5, 0, 3],
     glsl: 'bool solid(vec2 z) { return abs(W(z).y) < 0.5 * u_pt; }', js: null,
     info: '均匀流 + 点源。源流出的流体被来流包住，分界流线 $\\psi=\\pm\\frac m2$ 围成“半无限物体”（灰色）。驻点在 $z=-\\frac{m}{2\\pi U}$，物体在下游的半宽趋于 $\\frac{m}{2U}$。' },

@@ -18,7 +18,8 @@ export class PlaneView {
     this.bg = null;          // () => { prog, uniforms } 或 null
     this.glLayers = [];      // (renderer, view) => void
     this.overlays = [];      // (ctx, view) => void
-    this.tool = null;        // { down(z,e), move(z,e), up(z,e) } 捕获指针
+    // 工具：{ down(z,e) → 是否捕获指针, move, up, click(z,e) → 是否已处理, hover(z) → 吸附后的位置, cancel(), cursor }
+    this.tool = null;
     this.onHover = null; this.onChange = null; this.onView = null;
     if (opts.title) {
       const t = document.createElement('div');
@@ -106,40 +107,49 @@ export class PlaneView {
   }
   _bind() {
     const c = this.canvas;
-    let mode = null, last = null, grabbed = null, down = null;
+    let mode = null, last = null, grabbed = null, down = null, moved = false;
     const pt = (e) => { const b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
     c.addEventListener('pointerdown', (e) => {
       const [x, y] = pt(e), z = this.toWorld(x, y);
-      down = [x, y];
+      if (e.button === 2) { this.tool?.cancel?.(); return; }
+      down = [x, y]; moved = false;
       c.setPointerCapture(e.pointerId);
-      grabbed = this._hit(x, y);
-      if (grabbed) mode = 'handle';
-      else if (this.tool?.down?.(z, e, this)) mode = 'tool';
+      grabbed = null;
+      if (this.tool?.down?.(z, e, this)) mode = 'tool';
+      else if ((grabbed = this._hit(x, y))) mode = 'handle';
       else if (this.opts.pannable) { mode = 'pan'; c.style.cursor = 'grabbing'; }
       last = [x, y];
     });
+    c.addEventListener('contextmenu', (e) => { if (this.tool?.cancel) e.preventDefault(); });
     c.addEventListener('pointermove', (e) => {
-      const [x, y] = pt(e), z = this.toWorld(x, y);
-      if (mode === 'handle') { grabbed.move(z, e); this.onChange?.(grabbed); this.redraw(); }
-      else if (mode === 'tool') this.tool.move?.(z, e, this);
+      const [x, y] = pt(e);
+      let z = this.toWorld(x, y);
+      if (mode === 'handle') {
+        // 有工具时先等指针移动一小段再拖动，使在控制点上的单击可以交给工具（例如过参数点 a 作图）
+        if (moved || !this.tool?.click || Math.hypot(x - down[0], y - down[1]) >= 4) { moved = true; grabbed.move(z, e); this.onChange?.(grabbed); this.redraw(); }
+      }
+      else if (mode === 'tool') z = this.tool.move?.(z, e, this) || z;
       else if (mode === 'pan') {
         this.center = C(this.center.re - (x - last[0]) / this.ppu, this.center.im + (y - last[1]) / this.ppu);
         this._hw = Math.min(this.W, this.H) / (2 * this.ppu);
         this.redraw(); this.onView?.(this);
-      } else c.style.cursor = this._hit(x, y) ? 'pointer' : this.tool?.cursor || (this.opts.pannable ? 'grab' : 'crosshair');
+      } else {
+        z = this.tool?.hover?.(z, this) || z;
+        c.style.cursor = this._hit(x, y) ? 'pointer' : this.tool?.cursor || (this.opts.pannable ? 'grab' : 'crosshair');
+      }
       last = [x, y];
       if (mode !== 'pan') this.onHover?.(z, this);
     });
     const up = (e) => {
-      const [x, y] = pt(e);
-      if (mode === 'tool') this.tool.up?.(this.toWorld(x, y), e, this);
-      if (mode === 'handle') grabbed.release?.();
-      if (mode === 'pan' && down && Math.hypot(x - down[0], y - down[1]) < 4) this.onClick?.(this.toWorld(x, y), this);
+      const [x, y] = pt(e), z = this.toWorld(x, y);
+      if (mode === 'tool') this.tool.up?.(z, e, this);
+      if (mode === 'handle') { if (!moved) this.tool?.click?.(z, e, this); grabbed.release?.(); }
+      if (mode === 'pan' && down && Math.hypot(x - down[0], y - down[1]) < 4 && !this.tool?.click?.(z, e, this)) this.onClick?.(z, this);
       mode = null; grabbed = null; c.style.cursor = '';
     };
     c.addEventListener('pointerup', up);
     c.addEventListener('pointercancel', up);
-    c.addEventListener('pointerleave', () => { if (!mode) this.onHover?.(null, this); });
+    c.addEventListener('pointerleave', () => { if (!mode) { this.tool?.hover?.(null, this); this.onHover?.(null, this); } });
     c.addEventListener('wheel', (e) => {
       if (!this.opts.zoomable) return;
       e.preventDefault();

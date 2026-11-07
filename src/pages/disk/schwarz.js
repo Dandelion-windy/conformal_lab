@@ -1,4 +1,4 @@
-// 第 7 章 · 标签 2：施瓦茨引理与施瓦茨–皮克引理
+// 第 8 章 · 标签 2：施瓦茨引理与施瓦茨–皮克引理
 import * as K from '../../core/complex.js';
 import { h, slider, group, readouts, note, setTex, renderMath, select } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';

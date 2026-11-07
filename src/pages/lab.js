@@ -1,4 +1,4 @@
-// 第 5 章 映射实验室：全部预设 + 自定义表达式
+// 第 6 章 映射实验室：全部预设 + 自定义表达式
 import { shell, theory } from './common.js';
 import { Mapper } from '../components/mapper/index.js';
 import { PRESETS_A } from '../components/mapper/presets-a.js';
@@ -8,7 +8,7 @@ let M = null;
 export default {
   mount(root, app, arg) {
     const { stage, panel, theory: th } = shell(root, {
-      num: '05', title: '映射实验室',
+      num: '06', title: '映射实验室',
       lead: '输入任意 $f(z)$ 或选择预设。左图是 $z$ 平面的坐标网格与格子，右图是它们在 $f$ 下的像，同色同形的格子互相对应；拖动画布平移、滚轮缩放。',
     });
     M = new Mapper(stage, panel, { presets: [...PRESETS_A, ...PRESETS_B], custom: true, initial: arg || 'sq' });

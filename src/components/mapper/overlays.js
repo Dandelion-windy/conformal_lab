@@ -3,6 +3,7 @@ import { C, add, scale, isFin, I } from '../../core/complex.js';
 import { mapCurve, circlePts, segment } from '../../core/mapcurve.js';
 import { strokePath, dot, label, arrow } from '../../core/draw.js';
 import { invStereoUnit } from '../../core/vec3.js';
+import { drawOwn, drawUI, drawImages, drawPreimagePts, drawSphereOwn, drawSphereImages, drawSpherePreimagePts } from '../board/render.js';
 
 // 特殊点的标记：零点 ○、极点 ◉、临界点 ✕（f′ = 0，共形性失效处）
 function marker(ctx, x, y, kind, text) {
@@ -36,7 +37,6 @@ export function zOverlay(M) {
   return (ctx, v) => {
     const s = M.state;
     if (s.showBoundary) for (const B of M.boundary) strokePath(ctx, v, B.pts, { color: B.color, width: 3 });
-    for (const c of M.tools.curves) strokePath(ctx, v, c.pts(), { color: c.color, width: 2.4 });
     if (s.showBoundary) for (const [z, t] of M.marks) { dot(ctx, v, z, '#fff', 3.5); const [x, y] = v.toScreen(z); label(ctx, x + 7, y - 9, t); }
     const pz = M.probeZ;
     if (s.probe && pz) {
@@ -53,6 +53,9 @@ export function zOverlay(M) {
       ctx.beginPath(); ctx.arc(x, y, 7, 0, 2 * Math.PI); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
       dot(ctx, v, z, '#ffb454', 3);
     }
+    drawPreimagePts(ctx, v, M.geo, M);
+    drawOwn(ctx, v, M.geo, 'z');
+    drawUI(ctx, v, M.geo, 'z');
   };
 }
 
@@ -61,7 +64,6 @@ function mappedScene(M, proj, W, H, drawLine, drawDot) {
   const s = M.state, f = M.fm;
   const opt = { W, H };
   if (s.showBoundary) for (const B of M.boundary) drawLine(mapCurve(f, B.pts, proj, opt), { color: B.color, width: 3 });
-  for (const c of M.tools.curves) drawLine(mapCurve(f, c.pts(), proj, opt), { color: c.color, width: 2.4 });
   if (s.showBoundary) for (const [z, t] of M.marks) drawDot(f(z), '#fff', 3.5, `f(${t})`);
   const pz = M.probeZ;
   if (s.probe && pz) {
@@ -86,6 +88,9 @@ export function wOverlay(M) {
         if (t) { const [x, y] = v.toScreen(w); label(ctx, x + 7, y - 9, t); }
       });
     specialW(M, ctx, v);
+    drawImages(ctx, v, M.geo, M);
+    drawOwn(ctx, v, M.geo, 'w');
+    drawUI(ctx, v, M.geo, 'w');
   };
 }
 
@@ -108,7 +113,8 @@ export function sphereOverlay(M, which) {
     specialPoints(M, which, put);
     if (which === 'z') {
       if (s.showBoundary) for (const B of M.boundary) sv.curve(ctx, to3(extendInf(B.pts)), { color: B.color, width: 3 });
-      for (const c of M.tools.curves) sv.curve(ctx, to3(c.pts()), { color: c.color, width: 2.4 });
+      drawSphereOwn(ctx, sv, M.geo, 'z');
+      drawSpherePreimagePts(ctx, sv, M.geo);
       if (s.showBoundary) for (const [z, t] of M.marks) sv.point(ctx, toP(z), '#fff', 3.5, t);
       if (M.hoverZ) sv.point(ctx, toP(M.hoverZ), '#fff', 4.5);
       if (M.preimages) for (const z of M.preimages) sv.point(ctx, isFin(z) ? toP(z) : [0, 0, 1], '#ffb454', 5.5);
@@ -117,7 +123,8 @@ export function sphereOverlay(M, which) {
     const f = M.fm, opt = { W: sv.W, H: sv.H, tol: 3 };
     const line = (pts, st) => sv.curve(ctx, to3(mapCurve(f, pts, proj, opt)), st);
     if (s.showBoundary) for (const B of M.boundary) line(extendInf(B.pts), { color: B.color, width: 3 });
-    for (const c of M.tools.curves) line(c.pts(), { color: c.color, width: 2.4 });
+    drawSphereImages(ctx, sv, M.geo, M);
+    drawSphereOwn(ctx, sv, M.geo, 'w');
     if (s.showBoundary) for (const [z, t] of M.marks) { const w = f(z); sv.point(ctx, isFin(w) ? toP(w) : [0, 0, 1], '#fff', 3.5, `f(${t})`); }
     if (M.hoverZ) { const w = f(M.hoverZ); sv.point(ctx, isFin(w) ? toP(w) : [0, 0, 1], '#fff', 4.5); }
     if (M.hoverW) sv.point(ctx, isFin(M.hoverW) ? toP(M.hoverW) : [0, 0, 1], '#ffb454', 5);

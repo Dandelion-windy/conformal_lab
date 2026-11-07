@@ -1,4 +1,4 @@
-// 第 8 章 Schwarz–Christoffel 变换：上半平面（或圆盘）→ 多边形
+// 第 9 章 Schwarz–Christoffel 变换：上半平面（或圆盘）→ 多边形
 import * as K from '../../core/complex.js';
 import { h, select, slider, group, readouts, note, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
@@ -26,7 +26,7 @@ let api = null;
 export default {
   mount(root) {
     const { stage, panel, theory: th } = shell(root, {
-      num: '08', title: 'Schwarz–Christoffel 变换',
+      num: '09', title: 'Schwarz–Christoffel 变换',
       lead: '把上半平面映为多边形的共形映射可以显式写出：$f(z)=A\\displaystyle\\int^z\\prod_k(\\zeta-x_k)^{\\alpha_k-1}d\\zeta+B$。实轴上的前顶点 $x_k$ 映为多边形顶点，$\\alpha_k\\pi$ 是该顶点处的内角。下面的图形都由数值积分实时计算。',
     });
     api = mountSC(stage, panel);

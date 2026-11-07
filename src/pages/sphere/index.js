@@ -56,7 +56,7 @@ $$d(z_1,z_2)=\\frac{2|z_1-z_2|}{\\sqrt{(1+|z_1|^2)(1+|z_2|^2)}},\\qquad d(z,\\in
 <ul>
 <li>$a\\pm\\infty=\\infty\\ (a\\ne\\infty)$，$a\\cdot\\infty=\\infty\\ (a\\ne0)$，$\\dfrac{a}{0}=\\infty\\ (a\\ne0)$，$\\dfrac{a}{\\infty}=0\\ (a\\ne\\infty)$；<br>$\\infty\\pm\\infty$、$0\\cdot\\infty$、$\\dfrac{0}{0}$、$\\dfrac\\infty\\infty$ 无意义。$\\infty$ 的实部、虚部、辐角都无意义，$|\\infty|=+\\infty$。</li>
 <li>研究 $f$ 在 $\\infty$ 附近的性质，就令 $z=1/\\zeta$，研究 $g(\\zeta)=f(1/\\zeta)$ 在 $\\zeta=0$ 附近的性质：可去奇点、$m$ 阶极点、本性奇点、$m$ 阶零点的定义均如此转移。</li>
-<li>例：$f(z)=\\dfrac{az+b}{cz+d}$ 在 $\\overline{\\mathbb C}$ 上处处有定义：$f(-d/c)=\\infty$，$f(\\infty)=a/c$。这就是第 03 章研究分式线性变换时必须使用扩充平面的原因。</li>
+<li>例：$f(z)=\\dfrac{az+b}{cz+d}$ 在 $\\overline{\\mathbb C}$ 上处处有定义：$f(-d/c)=\\infty$，$f(\\infty)=a/c$。这就是第 04 章研究分式线性变换时必须使用扩充平面的原因。</li>
 <li>“$f$ 在 $\\infty$ 处共形”的定义：$g(\\zeta)=f(1/\\zeta)$ 在 $\\zeta=0$ 处共形。若 $f(\\infty)=\\infty$，则看 $1/f(1/\\zeta)$。</li>
 </ul>` },
       { title: '在球面上看映射：读图要点', tag: '读图', wide: true, html: `

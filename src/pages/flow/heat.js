@@ -1,4 +1,4 @@
-// 第 9 章 · 标签 3：稳态温度场 / 静电场——用共形映射解拉普拉斯方程的狄利克雷问题
+// 第 10 章 · 标签 3：稳态温度场 / 静电场——用共形映射解拉普拉斯方程的狄利克雷问题
 import * as K from '../../core/complex.js';
 import { h, select, toggle, group, readouts, note, setTex, renderMath, slider } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';

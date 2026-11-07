@@ -1,4 +1,4 @@
-// 第 3 章 · 标签 3：分解为 平移 → 反演 → 旋转伸缩 → 平移，并连续动画
+// 第 4 章 · 标签 3：分解为 平移 → 倒数 → 旋转伸缩 → 平移，并连续动画
 import * as K from '../../core/complex.js';
 import { h, group, note, setTex, tex, renderMath, select, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
@@ -39,7 +39,7 @@ function decompose(a, b, c, d) {
   const s1 = K.div(d, c), k = K.div(K.sub(K.mul(b, c), K.mul(a, d)), K.mul(c, c)), s2 = K.div(a, c);
   const steps = [];
   if (K.abs(s1) > 1e-12) steps.push({ name: '平移', op: `+${texCoef(s1)}`, flow: flows.trans(s1) });
-  steps.push({ name: '反演', op: '1/\\zeta', flow: flows.inv() });
+  steps.push({ name: '倒数', op: '1/\\zeta', flow: flows.inv() });
   if (K.abs(K.sub(k, K.ONE)) > 1e-12) steps.push({ name: '旋转伸缩', op: `\\times ${texCoef(k)}`, flow: flows.rotscale(k) });
   if (K.abs(s2) > 1e-12) steps.push({ name: '平移', op: `+${texCoef(s2)}`, flow: flows.trans(s2) });
   return steps;
@@ -90,7 +90,7 @@ export function mountDecompose(stage, panel) {
   panel.append(
     group('w = (az + b)/(cz + d)', preSel.el, h('div', { class: 'expr-row' }, ...inputs.map((x) => x.el)), err, domSel.el, tG.el),
     group('分解', fBox, stepper, play.el, stepNote),
-    group('原理', note('当 $c\\ne0$ 时 $$\\frac{az+b}{cz+d}=\\frac ac+\\frac{bc-ad}{c^2}\\cdot\\frac{1}{z+\\frac dc}$$ 所以任何分式线性变换都由<b>平移、反演 $1/z$、旋转伸缩</b>复合而成。前后两种显然把圆变成圆，只需检验 $1/z$ 保圆——这就是保圆性的证明思路。动画中的反演用“球面绕实轴转半圈”连续实现。')),
+    group('原理', note('当 $c\\ne0$ 时 $$\\frac{az+b}{cz+d}=\\frac ac+\\frac{bc-ad}{c^2}\\cdot\\frac{1}{z+\\frac dc}$$ 所以任何分式线性变换都由<b>平移、倒数 $1/z$、旋转伸缩</b>复合而成。$1/z$ 是关于单位圆的反演再关于实轴对称，在黎曼球面上就是绕实轴转半圈（第 03 章），动画按此连续实现。')),
   );
   renderMath(panel);
 
@@ -128,7 +128,7 @@ export function mountDecompose(stage, panel) {
     const cur = t >= 1 ? n : x <= 1e-9 ? 0 : i + 1;
     const st = steps[cur - 1];
     stepNote.innerHTML = cur === 0 ? '原始区域与网格。点击 ▶ 逐步播放，或点击上方步骤跳转。'
-      : `第 ${cur} 步：${st.name}（$${st.op}$）。${st.name === '反演' ? '反演把经过 0 的圆变成直线、把不经过 0 的直线变成经过 0 的圆。动画中它表现为黎曼球面绕实轴旋转半圈：±1 保持不动，单位圆内外互换。' : st.name === '平移' ? '平移只移动位置，形状不变。' : '旋转伸缩以原点为中心，形状相似。'}`;
+      : `第 ${cur} 步：${st.name}（$${st.op}$）。${st.name === '倒数' ? '黎曼球面绕实轴旋转半圈：±1 保持不动，单位圆内外互换。' : st.name === '平移' ? '平移只移动位置，形状不变。' : '旋转伸缩以原点为中心，形状相似。'}`;
     renderMath(stepNote);
     zv.redraw(); wv.redraw();
   }

@@ -66,6 +66,7 @@ class Renderer {
   }
   setUniforms(prog, u) {
     const gl = this.gl;
+    let unit = 0;
     for (const name in u) {
       const info = prog.uniforms[name];
       if (!info) continue;
@@ -77,6 +78,7 @@ class Renderer {
         case gl.FLOAT_VEC4: gl.uniform4f(L, v[0], v[1], v[2], v[3]); break;
         case gl.INT: case gl.BOOL: gl.uniform1i(L, v | 0); break;
         case gl.FLOAT_MAT3: gl.uniformMatrix3fv(L, false, v); break;
+        case gl.SAMPLER_2D: gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, v); gl.uniform1i(L, unit++); break;
         default: break;
       }
     }
@@ -100,6 +102,18 @@ class Renderer {
     this.setUniforms(prog, uniforms);
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  // RGBA32F 数据纹理（着色器中用 texelFetch 读取）；tex 为空时新建
+  dataTexture(tex, data, w, h) {
+    const gl = this.gl;
+    tex ||= gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, w, h, 0, gl.RGBA, gl.FLOAT, data);
+    return tex;
   }
   // 把当前帧（左下角 w×h 区域）拷贝到 2D 上下文
   copyTo(ctx) {

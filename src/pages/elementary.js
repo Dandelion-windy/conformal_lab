@@ -1,4 +1,4 @@
-// 第 4 章 初等函数的映射：幂、根式、指数、对数、三角、茹科夫斯基
+// 第 5 章 初等函数的映射：幂、根式、指数、对数、三角、茹科夫斯基
 import { shell, theory } from './common.js';
 import { Mapper } from '../components/mapper/index.js';
 import { PRESETS_A } from '../components/mapper/presets-a.js';
@@ -8,7 +8,7 @@ let M = null;
 export default {
   mount(root, app, arg) {
     const { stage, panel, theory: th } = shell(root, {
-      num: '04', title: '初等函数的映射',
+      num: '05', title: '初等函数的映射',
       lead: '每个预设下方的“示例区域”按钮给出教材中的典型区域。注意观察：哪些曲线族被映成了哪些曲线族，区域的哪条边界去了哪里，以及 $f\'(z)=0$ 的点处发生了什么。',
     });
     M = new Mapper(stage, panel, { presets: [...PRESETS_A, ...PRESETS_B].filter((p) => p.elem), custom: false, initial: arg || 'sq' });

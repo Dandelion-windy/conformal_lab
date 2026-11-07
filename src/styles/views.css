@@ -50,3 +50,66 @@
 .view-stack { display: grid; min-height: 0; min-width: 0; }
 .view-stack > * { grid-area: 1 / 1; min-height: 0; }
 .view-stack > [hidden] { display: none; }
+
+/* 几何画板 */
+.stage.with-geo { grid-template-rows: auto minmax(0, 1fr); }
+.geo-bar {
+  grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px;
+}
+.geo-bar { position: relative; z-index: 5; }
+.geo-tools { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.geo-note { font-size: 12px; color: var(--accent2); padding: 0 6px; }
+.geo-pop {
+  position: absolute; top: calc(100% + 6px); z-index: 6; display: flex; gap: 8px; padding: 6px 9px;
+  background: var(--panel2); border: 1px solid var(--line2); border-radius: 9px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.geo-btn {
+  width: 30px; height: 30px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted);
+}
+.geo-btn:hover { color: var(--text); background: rgba(120, 150, 230, 0.1); }
+.geo-btn.on { color: #fff; background: rgba(92, 200, 255, 0.16); border-color: rgba(92, 200, 255, 0.55); }
+.geo-btn:disabled { opacity: 0.35; cursor: default; background: transparent; }
+.geo-ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.geo-ic .d { fill: var(--accent); stroke: #0b1020; stroke-width: 0.9; }
+.geo-ic .o { fill: #0b1020; stroke: var(--accent); stroke-width: 1.4; }
+.geo-ic .f { fill: currentColor; stroke: none; }
+.geo-ic .h { fill: rgba(92, 200, 255, 0.22); }
+.geo-btn.on .geo-ic .d { fill: #fff; }
+.geo-sep { width: 1px; height: 20px; background: var(--line2); margin: 0 3px; }
+.geo-opt { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); }
+.geo-num {
+  width: 64px; font: 12.5px var(--mono); color: var(--text); background: var(--bg2); border: 1px solid var(--line2);
+  border-radius: 6px; padding: 3px 6px; outline: none;
+}
+.geo-num:focus { border-color: var(--accent); }
+.geo-num.err { border-color: var(--red); }
+.geo-hint { max-width: calc(100% - 20px); color: var(--muted); background: rgba(8, 12, 24, 0.82); font-size: 12px; }
+.geo-hint:empty { display: none; }
+.geo-hint.warn { color: var(--accent2); }
+.geo-list { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; padding-right: 2px; }
+.geo-list-head { font-size: 11.5px; color: var(--dim); letter-spacing: 0.08em; padding: 4px 2px 2px; }
+.geo-empty { font-size: 12px; color: var(--dim); padding: 0 4px 4px; }
+.geo-row {
+  display: grid; grid-template-columns: 16px 16px 30px minmax(0, 1fr) auto 16px; align-items: center; gap: 5px;
+  padding: 3px 4px; border-radius: 6px; font-size: 12.5px; cursor: pointer; border: 1px solid transparent;
+}
+.geo-row:hover { background: rgba(120, 150, 230, 0.07); }
+.geo-row.sel { background: rgba(92, 200, 255, 0.1); border-color: rgba(92, 200, 255, 0.35); }
+.geo-row.undef .geo-val { color: var(--accent2); }
+.geo-row input[type='color'] { width: 16px; height: 16px; padding: 0; border: 0; border-radius: 4px; background: none; cursor: pointer; }
+.geo-row input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
+.geo-row input[type='color']::-webkit-color-swatch { border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; }
+.geo-eye, .geo-del { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 12px; line-height: 1; }
+.geo-eye.off { color: var(--dim); }
+.geo-del:hover { color: var(--red); }
+.geo-oname { font-family: var(--mono); color: var(--text); }
+.geo-desc { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.geo-val { font: 11.5px var(--mono); color: var(--text); white-space: nowrap; }
+.geo-edit {
+  width: 112px; font: 11.5px var(--mono); color: var(--text); background: var(--bg2); border: 1px solid var(--line2);
+  border-radius: 5px; padding: 1px 5px; outline: none;
+}
+.geo-edit:focus { border-color: var(--accent); }
+.geo-edit.err { border-color: var(--red); }

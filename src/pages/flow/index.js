@@ -1,4 +1,4 @@
-// 第 9 章 物理应用：复势与平面势流、茹科夫斯基翼型、稳态温度场
+// 第 10 章 物理应用：复势与平面势流、茹科夫斯基翼型、稳态温度场
 import { tabbedShell, theory } from '../common.js';
 import { mountBasic } from './basic.js';
 import { mountAirfoil } from './airfoil.js';
@@ -14,7 +14,7 @@ const TABS = [
 export default {
   mount(root, app, arg) {
     page = tabbedShell(root, {
-      num: '09', title: '物理应用：复势与共形映射法',
+      num: '10', title: '物理应用：复势与共形映射法',
       lead: '平面上的理想流体势流、稳态温度场、静电场都由调和函数描述。解析函数 $W=\\varphi+i\\psi$ 的实部、虚部都是调和函数且等值线正交，而<b>共形映射保持调和性</b>——所以可以先在简单区域中求解，再用共形映射搬到复杂区域。',
       tabs: TABS,
     });

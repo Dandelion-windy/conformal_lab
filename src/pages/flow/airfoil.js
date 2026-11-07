@@ -1,4 +1,4 @@
-// 第 9 章 · 标签 2：茹科夫斯基翼型——用 z = ζ + 1/ζ 把绕圆柱流动变为绕翼型流动，Kutta 条件
+// 第 10 章 · 标签 2：茹科夫斯基翼型——用 z = ζ + 1/ζ 把绕圆柱流动变为绕翼型流动，Kutta 条件
 import * as K from '../../core/complex.js';
 import { h, slider, toggle, group, readouts, note, renderMath } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';

@@ -10,6 +10,7 @@ import { renderer } from './core/gl.js';
 import home from './pages/home.js';
 import sphere from './pages/sphere/index.js';
 import conformal from './pages/conformal/index.js';
+import inversion from './pages/inversion/index.js';
 import mobius from './pages/mobius/index.js';
 import elementary from './pages/elementary.js';
 import lab from './pages/lab.js';
@@ -25,16 +26,17 @@ const CHAPTERS = [
   { id: 'sphere', num: '01', title: '黎曼球面', sub: '扩充复平面 · 球极投影', mod: sphere },
   { id: 'conformal', num: '02', title: '共形性的几何意义', sub: '旋转角 · 伸缩率', mod: conformal },
   { sec: '变换' },
-  { id: 'mobius', num: '03', title: '分式线性变换', sub: '保圆 · 保对称 · 交比', mod: mobius },
-  { id: 'elementary', num: '04', title: '初等函数的映射', sub: '幂 · 指数 · 三角 · 茹科夫斯基', mod: elementary },
-  { id: 'lab', num: '05', title: '映射实验室', sub: '任意 f(z) 自由探索', mod: lab },
+  { id: 'inversion', num: '03', title: '反演', sub: '对称点 · 保圆 · 球极投影', mod: inversion },
+  { id: 'mobius', num: '04', title: '分式线性变换', sub: '群 · 交比 · 双极坐标', mod: mobius },
+  { id: 'elementary', num: '05', title: '初等函数的映射', sub: '幂 · 指数 · 三角 · 茹科夫斯基', mod: elementary },
+  { id: 'lab', num: '06', title: '映射实验室', sub: '任意 f(z) 自由探索', mod: lab },
   { sec: '区域与定理' },
-  { id: 'regions', num: '06', title: '区域的共形映射', sub: '典型例题 · 分步演示', mod: regions },
-  { id: 'disk', num: '07', title: '单位圆盘', sub: '自同构 · 施瓦茨引理', mod: disk },
-  { id: 'sc', num: '08', title: 'Schwarz–Christoffel', sub: '上半平面 → 多边形', mod: sc },
+  { id: 'regions', num: '07', title: '区域的共形映射', sub: '典型例题 · 分步演示', mod: regions },
+  { id: 'disk', num: '08', title: '单位圆盘', sub: '自同构 · 施瓦茨引理', mod: disk },
+  { id: 'sc', num: '09', title: 'Schwarz–Christoffel', sub: '上半平面 → 多边形', mod: sc },
   { sec: '应用与总结' },
-  { id: 'flow', num: '09', title: '物理应用', sub: '复势 · 绕流 · 翼型', mod: flow },
-  { id: 'sheet', num: '10', title: '公式速查', sub: '常用映射与定理', mod: sheet },
+  { id: 'flow', num: '10', title: '物理应用', sub: '复势 · 绕流 · 翼型', mod: flow },
+  { id: 'sheet', num: '11', title: '公式速查', sub: '常用映射与定理', mod: sheet },
 ];
 
 const nav = document.getElementById('nav');

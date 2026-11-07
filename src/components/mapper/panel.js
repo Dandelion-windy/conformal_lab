@@ -46,7 +46,6 @@ export function buildPanel(M, panel) {
   const tLink = tg('两个球面同步旋转', 'linkCam');
   const looks = h('div', { class: 'btn-row' }, button('看 N（∞）', () => M.look('N'), 'small'), button('看 S（0）', () => M.look('S'), 'small'), button('侧面', () => M.look('side'), 'small'));
   const sphereCtl = h('div', { class: 'ctl' }, h('span', { class: 'ctl-label' }, '球面视角（拖动球面旋转）'), looks, tLink.el);
-  const toolSeg = segmented({ label: '在 z 平面上作图', options: [{ value: 'pan', label: '✋ 平移' }, { value: 'draw', label: '✎ 画笔' }, { value: 'line', label: '╱ 线段' }, { value: 'circle', label: '◯ 圆' }], value: 'pan', onChange: (v) => M.tools.setMode(v) });
   const tProbe = tg('局部探针（点击固定）', 'probe', () => { M.pinned = null; });
   const tPre = tg('悬停 w 显示全部原像', 'preimg');
   const morphLabel = h('span', { class: 'ctl-label' });
@@ -59,9 +58,10 @@ export function buildPanel(M, panel) {
 
   panel.append(
     group('映射函数', presetSel.el, exprRow, chips, tSl.el, paramRo),
+    M.geo.ui.group,
     group('源区域与网格', domSel.el, srcInfo, domSl.el, gridSeg.el, densSeg.el, h('div', { class: 'toggles' }, tFill.el, tLines.el, tBd.el), legend),
     group('着色', colorSel.el, bgLineSeg.el, brSl.el),
-    group('视图与工具', h('div', { class: 'toggles' }, zMode.el, wMode.el), sphereCtl, toolSeg.el, button('清除所画曲线', () => M.tools.clear(), 'small'), h('div', { class: 'toggles' }, tProbe.el, tPre.el),
+    group('视图与工具', h('div', { class: 'toggles' }, zMode.el, wMode.el), sphereCtl, h('div', { class: 'toggles' }, tProbe.el, tPre.el),
       h('div', { class: 'ctl' }, morphLabel, morph.el)),
     group('整体结构（在黎曼球面上看）', tSpecial.el, globalBox),
     group('读数（鼠标悬停 z 平面）', ro.el),

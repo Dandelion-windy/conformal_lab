@@ -1,7 +1,7 @@
 // 源区域：决定把 z 平面的哪一部分映过去。
 // · 整个平面：对数极坐标网格覆盖 e^{-8} < |z| < e^{8}（含 ∞ 附近），不受 z 视图范围限制
 // · 周期函数的基本周期带：避免多个周期的像互相覆盖
-// · 当前 z 视图、或第 04 章的常用区域
+// · 当前 z 视图、或第 05 章的常用区域
 import { C, polar, isFin, INF, cis } from '../../core/complex.js';
 import { segment } from '../../core/mapcurve.js';
 import { DOMAINS, DOMAIN_MASK, BCOL, ss } from '../../core/domains.js';

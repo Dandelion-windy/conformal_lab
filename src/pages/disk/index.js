@@ -1,4 +1,4 @@
-// 第 7 章 单位圆盘：自同构、施瓦茨引理
+// 第 8 章 单位圆盘：自同构、施瓦茨引理
 import { tabbedShell, theory } from '../common.js';
 import { mountAutomorphism } from './automorphism.js';
 import { mountSchwarz } from './schwarz.js';
@@ -12,7 +12,7 @@ const TABS = [
 export default {
   mount(root, app, arg) {
     page = tabbedShell(root, {
-      num: '07', title: '单位圆盘：自同构与施瓦茨引理',
+      num: '08', title: '单位圆盘：自同构与施瓦茨引理',
       lead: '单位圆盘 $\\mathbb D=\\{|z|<1\\}$ 是共形映射理论的“标准区域”。由黎曼映射定理，任何单连通真子区域都与它共形等价，因此 $\\mathbb D$ 到自身的共形映射（自同构）决定了映射的唯一性。',
       tabs: TABS,
     });

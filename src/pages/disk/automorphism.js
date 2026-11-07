@@ -1,4 +1,4 @@
-// 第 7 章 · 标签 1：单位圆盘的自同构 φ(z) = e^{iθ}(z − a)/(1 − āz)，双曲几何视角
+// 第 8 章 · 标签 1：单位圆盘的自同构 φ(z) = e^{iθ}(z − a)/(1 − āz)，双曲几何视角
 import * as K from '../../core/complex.js';
 import { h, slider, group, readouts, note, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';

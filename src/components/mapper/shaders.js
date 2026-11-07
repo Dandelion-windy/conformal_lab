@@ -67,6 +67,53 @@ vec4 srcPattern(vec2 z) {
   return vec4(col, alpha);
 }`;
 
+// w 平面画板曲线的原像：在 z 处求 w = f(z)，量出 w 到每条曲线的距离并换算成屏幕像素
+// （距离沿法向 n 的变化率为 |(n·∂w/∂x, n·∂w/∂y)|），因此曲线的全部原像分支都被精确画出。
+// 曲线来自数据纹理：每条 3 个纹素 (类型, x1, y1, x2)、(y2, r, θ0, Δθ)、(R, G, B, 线宽)；类型 0 直线 1 射线 2 线段 3 圆 4 圆弧
+const WOBJ = `uniform sampler2D u_wobj; uniform int u_nw; uniform float u_dpr;
+vec2 wNear(int ty, vec4 A, vec4 B, vec2 w) {
+  vec2 p = A.yz;
+  if (ty <= 2) {
+    vec2 d = vec2(A.w, B.x) - p;
+    float t = dot(w - p, d) / max(dot(d, d), 1e-30);
+    if (ty >= 1) t = max(t, 0.0);
+    if (ty == 2) t = min(t, 1.0);
+    return p + t * d;
+  }
+  vec2 v = w - p; float L = length(v);
+  vec2 u = L > 0.0 ? v / L : vec2(1.0, 0.0);
+  if (ty == 4) {
+    float th = atan(u.y, u.x);
+    float rel = B.w > 0.0 ? mod(th - B.z, TAU) : mod(B.z - th, TAU);
+    if (rel > abs(B.w)) {
+      vec2 e0 = p + B.y * vec2(cos(B.z), sin(B.z)), e1 = p + B.y * vec2(cos(B.z + B.w), sin(B.z + B.w));
+      return distance(w, e0) < distance(w, e1) ? e0 : e1;
+    }
+  }
+  return p + B.y * u;
+}
+// ∂w/∂x、∂w/∂y 用相邻像素处的 z 直接求 f 的差分，并取前、后差分中较小者，避免在割线处把 f 的跳跃当成导数
+vec2 dmin(vec2 a, vec2 b) { return dot(a, a) < dot(b, b) ? a : b; }
+// 必须在统一控制流中调用（使用了 dFdx）
+vec3 wObjects(vec3 col, vec2 z, float k) {
+  vec2 ex = dFdx(z), ey = dFdy(z), w = Ft(z);
+  vec2 jx = dmin(Ft(z + ex) - w, w - Ft(z - ex)), jy = dmin(Ft(z + ey) - w, w - Ft(z - ey));
+  if (any(isnan(w)) || any(isinf(w)) || any(isnan(jx)) || any(isnan(jy)) || any(isinf(jx)) || any(isinf(jy))) return col;
+  for (int i = 0; i < u_nw; i++) {
+    vec4 A = texelFetch(u_wobj, ivec2(0, i), 0), B = texelFetch(u_wobj, ivec2(1, i), 0), S = texelFetch(u_wobj, ivec2(2, i), 0);
+    vec2 dv = w - wNear(int(A.x + 0.5), A, B, w);
+    float d = length(dv);
+    vec2 n = d > 0.0 ? dv / d : vec2(0.0);
+    float g = d > 0.0 ? length(vec2(dot(n, jx), dot(n, jy))) : max(length(jx), length(jy));
+    float px = d / max(g, 1e-30);
+    if (isnan(px)) continue;
+    float wd = S.w * u_dpr;
+    col = mix(col, vec3(0.016, 0.024, 0.055), aaLine(px, wd + 2.2 * u_dpr) * 0.55 * k);
+    col = mix(col, S.rgb, aaLine(px, wd) * k);
+  }
+  return col;
+}`;
+
 const ft = (expr, xexpr = null) => `vec2 F(vec2 z) { return ${expr}; }
 // 变形动画：分式线性变换沿单参数子群 T_t（每一步都共形），其他函数用线性插值
 vec2 Ft(vec2 z) {
@@ -85,6 +132,7 @@ out vec4 o;
 ${PRELUDE}
 ${PATTERN}
 ${ft(expr, xexpr)}
+${WOBJ}
 bool inSrc(vec2 z) { return ${mask}; }
 void main() {
   vec2 z = u_center + (gl_FragCoord.xy - 0.5 * u_res) / u_ppu;
@@ -92,6 +140,7 @@ void main() {
   vec4 p = srcPattern(z);
   bool ins = inSrc(z);
   vec3 col = ins ? mix(bg, p.rgb, p.a) : bg * u_dim;
+  if (u_nw > 0) col = wObjects(col, z, ins ? 1.0 : 0.6);
   o = vec4(col, 1.0);
 }`;
 }
@@ -208,6 +257,7 @@ out vec4 o;
 ${PRELUDE}
 ${PATTERN}
 ${ft(expr, xexpr)}
+${WOBJ}
 bool inSrc(vec2 z) { return ${mask}; }
 void main() {
   vec3 dir = rayDir(), P; float edge;
@@ -215,7 +265,9 @@ void main() {
   vec2 z = stereo(P);
   vec3 bg = colorOfX(FtX(sphereX(P)));
   vec4 p = srcPattern(z);
-  vec3 col = inSrc(z) ? mix(bg, p.rgb, p.a) : bg * u_dim;
+  bool ins = inSrc(z);
+  vec3 col = ins ? mix(bg, p.rgb, p.a) : bg * u_dim;
+  if (u_nw > 0) col = wObjects(col, z, ins ? 1.0 : 0.6);
   o = vec4(hit ? shade(col, P, dir) : sky(), 1.0);
 }`;
 }

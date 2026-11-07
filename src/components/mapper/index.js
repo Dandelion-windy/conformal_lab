@@ -8,7 +8,8 @@ import { compile } from '../../core/compile.js';
 import { renderer } from '../../core/gl.js';
 import { DOMAINS, DOMAIN_GRID } from '../../core/domains.js';
 import { zOverlay, wOverlay, sphereOverlay } from './overlays.js';
-import { CurveTools } from './tools.js';
+import { Geo } from '../board/index.js';
+import { buildGeoUI } from '../board/ui.js';
 import { PreimageFinder } from './preimage.js';
 import { buildPanel } from './panel.js';
 import { zShader, wBgShader, meshShaders, sphereZShader, sphereWBgShader, sphereMeshShaders } from './shaders.js';
@@ -41,7 +42,8 @@ export class Mapper {
     this.zv = new PlaneView(this.zBox.plane, { title: '<b>z</b> 平面 · 原像' });
     this.wv = new PlaneView(this.wBox.plane, { title: '<b>w = f(z)</b> 平面 · 像' });
     this.mesh = new SourceMeshGL();
-    this.tools = new CurveTools(this.zv, () => this.redraw());
+    this.mapVer = 0;
+    this.geo = new Geo(this);
     this.finder = new PreimageFinder();
     this.f = (z) => this.fn.js(z, this.P);
     this.fm = (z) => {
@@ -61,6 +63,9 @@ export class Mapper {
     this.zv.onView = () => { this.ver++; if (this.state.dom === 'view') this.scheduleSource(); this.redraw(); };
     this.wv.onView = () => this.wv.redraw();
     this.ver = 0;
+    this.geo.ui = buildGeoUI(this.geo);
+    stage.classList.add('with-geo');
+    stage.prepend(this.geo.ui.bar);
     this.ui = buildPanel(this, panel);
     this.loadPreset(initial || presets[0].id);
     if (sphere) { this.setMode('z', 'sphere'); this.setMode('w', 'sphere'); if (this.preset.play && this.flow) this.ui.playMorph(); }
@@ -72,7 +77,12 @@ export class Mapper {
       u_pa: [P.a.re, P.a.im], u_pb: [P.b.re, P.b.im], u_pc: [P.c.re, P.c.im], u_pt: P.t.re,
       u_morph: s.morph, u_dp: src.dp ?? 0, u_rect: src.rect || [0, 0, 0, 0],
       u_gmode: s.grid === 'polar' ? 1 : 0, u_gstep: this.gridStep(), u_cells: s.fill ? 1 : 0, u_glines: s.showLines ? 1 : 0,
-      u_cellA: 0.9, u_dim: s.fill && src.key !== 'plane' ? 0.72 : 1, ...this.flowUniforms(), ...this.refUniforms() };
+      u_cellA: 0.9, u_dim: s.fill && src.key !== 'plane' ? 0.72 : 1, ...this.flowUniforms(), ...this.refUniforms(), ...this.geoUniforms() };
+  }
+  // w 平面画板曲线（z 平面着色器据此画出它们的原像）
+  geoUniforms() {
+    const t = this.geo.wTexture();
+    return t ? { u_wobj: t.tex, u_nw: t.n, u_dpr: Math.min(window.devicePixelRatio || 1, 2) } : { u_nw: 0 };
   }
   // 选叶的参考点：z 平面视图的中心；z 显示为球面时取球面上正对观察者的点
   refUniforms() {
@@ -178,7 +188,7 @@ export class Mapper {
     if (this._srcRaf) return;
     this._srcRaf = requestAnimationFrame(() => { this._srcRaf = 0; this.rebuildSource(); });
   }
-  remap() { this.ver++; if (this.fn) this.detectMobius(); this.scheduleInfo(); this.redraw(); }
+  remap() { this.ver++; this.mapVer++; if (this.fn) this.detectMobius(); this.geo.changed(); this.scheduleInfo(); this.redraw(); }
   // 零点、极点、临界点、∞ 处的值（数值求解，稍作防抖）
   scheduleInfo() {
     clearTimeout(this._infoT);
@@ -189,7 +199,7 @@ export class Mapper {
       this.redraw();
     }, 120);
   }
-  setMorph(t) { this.state.morph = t; this.ver++; this.redraw(); }
+  setMorph(t) { this.state.morph = t; this.ver++; this.mapVer++; this.redraw(); }
   setGrid(g) { this.state.grid = g; this.redraw(); }
   setDensity(n) { this.state.density = n; this.redraw(); }
   setMode(which, mode) {
@@ -224,6 +234,7 @@ export class Mapper {
       this.orientSpheres();
     }
     this.ui?.syncModes?.();
+    this.geo.syncHint();
     this.redraw();
   }
   // 让 z 球面朝向源区域的中心、w 球面朝向它的像；预设可用 zLook / wLook 指定

@@ -1,4 +1,4 @@
-// 第 3 章 · 标签 4：不动点、乘子与分类（椭圆 / 双曲 / 斜驶 / 抛物），轨道与流线
+// 第 4 章 · 标签 4：不动点、乘子与分类（椭圆 / 双曲 / 斜驶 / 抛物），轨道与流线
 import * as K from '../../core/complex.js';
 import { h, slider, segmented, group, readouts, note, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';

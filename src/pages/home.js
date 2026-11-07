@@ -8,7 +8,8 @@ import { compile } from '../core/compile.js';
 const CARDS = {
   sphere: '球极投影的实时公式、圆 ↔ 圆、保角、弦距离、∞ 的邻域；在两个球面上直接看映射：分式线性变换是球面的旋转或流动，有理函数是球面的多层覆盖。',
   conformal: '局部探针：旋转角与伸缩率、无穷小圆 → 无穷小圆、Jacobi 矩阵与 C-R 方程、临界点处角度放大。',
-  mobius: '三点确定与交比、保圆与保对称（对称点与正交圆族）、分解为平移/反演/伸缩的动画、不动点与四种类型。',
+  inversion: '对称点的作图与正交圆刻画、各种位置的圆与直线的像、黎曼球面是复平面的空间反演、球面上的反演就是镜面对称。',
+  mobius: '群结构、三点确定与交比、双极坐标网格与求变换的方法、分解为平移/倒数/伸缩的动画、不动点与四种类型。',
   elementary: '幂函数、根式、指数、对数、三角函数、茹科夫斯基函数的映射性质，每个都附典型区域示例。',
   lab: '输入任意 f(z)：网格、区域、自由画线、域着色、原像、变形动画、黎曼球面视图。',
   regions: '十道典型例题：透镜形、月牙形、割缝区域、半带形……逐步展示每一个初等映射的作用。',
@@ -26,7 +27,7 @@ export default {
       h('div', {},
         h('div', { class: 'eyebrow', style: 'color:var(--accent);font:600 12px var(--mono);letter-spacing:.16em' }, 'COMPLEX ANALYSIS · CONFORMAL MAPPINGS'),
         h('h1', { html: '用眼睛理解<br><span>共形映射</span>' }),
-        h('p', { class: 'lead', html: '本页把复变函数中“共形映射”一章的主要内容做成可交互的图形：从黎曼球面与扩充复平面出发，到导数的几何意义、分式线性变换、初等函数的映射、区域之间的映射、施瓦茨引理、Schwarz–Christoffel 公式，以及流体与温度场中的应用。所有图形实时计算，可以拖动、缩放、改参数。' }),
+        h('p', { class: 'lead', html: '本页把复变函数中“共形映射”一章的主要内容做成可交互的图形：从黎曼球面与扩充复平面出发，到导数的几何意义、反演、分式线性变换、初等函数的映射、区域之间的映射、施瓦茨引理、Schwarz–Christoffel 公式，以及流体与温度场中的应用。所有图形实时计算，可以拖动、缩放、改参数。' }),
         h('div', { class: 'btn-row', style: 'margin-top:16px' },
           h('a', { class: 'btn primary', href: '#sphere', style: 'text-decoration:none' }, '从黎曼球面开始 →'),
           h('a', { class: 'btn', href: '#lab', style: 'text-decoration:none' }, '打开映射实验室'),

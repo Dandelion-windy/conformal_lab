@@ -1,4 +1,4 @@
-// 第 10 章 公式速查：常用映射、区域对照、定理
+// 第 11 章 公式速查：常用映射、区域对照、定理
 import { h, renderMath } from '../../core/ui.js';
 
 const open = (id, text = '在实验室中打开') => `<a class="open-lab" href="#lab/${id}">${text} →</a>`;
@@ -40,7 +40,7 @@ const REGIONS = `
 <tr><td>两圆切于 $a$ 所围区域</td><td>带形</td><td>$w=\\dfrac{k}{z-a}+c$，再用 $e^{(\\cdot)}$ 化为半平面</td></tr>
 <tr><td>上半平面</td><td>多边形</td><td>Schwarz–Christoffel：$A\\displaystyle\\int^z\\prod(\\zeta-x_k)^{\\alpha_k-1}d\\zeta+B$</td></tr>
 </table>
-<p class="small">逐步演示见 <a href="#regions">第 06 章 · 区域的共形映射</a>。</p>`;
+<p class="small">逐步演示见 <a href="#regions">第 07 章 · 区域的共形映射</a>。</p>`;
 
 const THMS = `
 <div class="thm" data-t="导数的几何意义">$f'(z_0)\\ne0$：旋转角 $\\arg f'(z_0)$，伸缩率 $|f'(z_0)|$，与方向无关；面积放大 $|f'|^2$。</div>
@@ -103,7 +103,7 @@ export default {
   mount(root) {
     const card = (title, tag, html, wide = false) => h('div', { class: `card ${wide ? 'wide' : ''}`, html: `<h3><span class="tag">${tag}</span>${title}</h3>${html}` });
     root.append(
-      h('header', { class: 'page-head' }, h('div', {}, h('div', { class: 'eyebrow' }, 'Chapter 10'), h('h1', {}, '公式速查'),
+      h('header', { class: 'page-head' }, h('div', {}, h('div', { class: 'eyebrow' }, 'Chapter 11'), h('h1', {}, '公式速查'),
         h('p', { class: 'lead' }, '复习用的汇总表。点击“在实验室中打开”可直接查看对应映射的图像。'))),
       h('div', { class: 'theory', style: 'margin-top:0' },
         card('初等映射', '映射', MAPS, true),

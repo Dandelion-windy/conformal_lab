@@ -54,3 +54,17 @@ export function onCircle(K, t) {
   return { z: add(K.c, scale(u, K.r)), d: mul(u, C(0, 1)) };
 }
 export const gcArg = (K) => (K.line ? arg(K.d) : null);
+
+// 广义圆 C 关于圆 G 反演的像（过 G 的圆心时为直线）
+export function invertGC(G, C) {
+  const O = G.c, f = (z) => reflect(G, z), eps = 1e-9 * Math.max(1, G.r);
+  if (C.line) {
+    const v = sub(O, C.p), off = Math.abs(v.re * C.d.im - v.im * C.d.re);
+    if (off < eps) return { line: true, p: O, d: C.d };
+    return circleThrough(f(C.p), f(add(C.p, C.d)), O);
+  }
+  const t0 = arg(sub(O, C.c));
+  const pts = [1, 3, 5].map((k) => add(C.c, scale(cis(t0 + (k * Math.PI) / 3), C.r)));
+  if (Math.abs(abs(sub(O, C.c)) - C.r) < eps) return circleThrough(f(pts[0]), f(pts[1]), INF);
+  return circleThrough(...pts.map(f));
+}

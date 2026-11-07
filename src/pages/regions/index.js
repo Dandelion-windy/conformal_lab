@@ -1,4 +1,4 @@
-// 第 6 章 区域的共形映射：典型例题分步演示
+// 第 7 章 区域的共形映射：典型例题分步演示
 import * as K from '../../core/complex.js';
 import { h, select, group, note, tex, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
@@ -15,7 +15,7 @@ let api = null;
 export default {
   mount(root, app, arg) {
     const { stage, panel, theory: th } = shell(root, {
-      num: '06', title: '区域的共形映射：典型例题',
+      num: '07', title: '区域的共形映射：典型例题',
       lead: '求“区域 → 上半平面/单位圆盘”的映射，基本思路是用初等映射逐步化简：<b>分式线性变换</b>把交点/切点送到 $0,\\infty$，<b>幂函数</b>调整张角，<b>指数/对数</b>在带形与角形之间转换。每一步都可以单独观察。',
       stageClass: 'two',
     });

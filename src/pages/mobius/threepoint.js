@@ -1,4 +1,4 @@
-// 第 3 章 · 标签 1：三点确定分式线性变换；交比不变；边界定向（左侧 → 左侧）
+// 第 4 章 · 标签 1：三点确定分式线性变换；交比不变；边界定向（左侧 → 左侧）
 import * as K from '../../core/complex.js';
 import { h, select, toggle, group, readouts, note, setTex, renderMath } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
