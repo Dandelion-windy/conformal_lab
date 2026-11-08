@@ -34,7 +34,6 @@
 .card th, .card td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: middle; }
 .card th { color: var(--muted); font-weight: 600; font-size: 12.5px; letter-spacing: 0.06em; background: var(--bg2); }
 .card tr:hover td { background: rgba(120, 150, 230, 0.04); }
-.open-lab { font-size: 12px; white-space: nowrap; }
 
 /* 首页 */
 .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: center; min-height: 420px; }
@@ -55,9 +54,3 @@
 .howto div { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--muted); }
 .howto b { color: var(--text); display: block; margin-bottom: 2px; }
 @media (max-width: 1180px) { .hero { grid-template-columns: 1fr; } .theory { grid-template-columns: 1fr; } }
-.ex-item { border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); margin: 8px 0; }
-.ex-item summary { cursor: pointer; padding: 9px 12px; list-style: none; color: #d7deef; }
-.ex-item summary::-webkit-details-marker { display: none; }
-.ex-item summary::before { content: '▸'; color: var(--accent); margin-right: 8px; display: inline-block; transition: transform 0.15s; }
-.ex-item[open] summary::before { transform: rotate(90deg); }
-.ex-ans { padding: 2px 14px 12px 32px; color: var(--muted); border-top: 1px dashed var(--line); margin-top: 2px; padding-top: 8px; }

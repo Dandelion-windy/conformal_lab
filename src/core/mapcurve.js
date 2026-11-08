@@ -1,8 +1,8 @@
 // 曲线的像：自适应细分，使像曲线在屏幕上光滑；在极点/割线处自动断开（输出 null 表示断点）
-import { lerp, isFin } from './complex.js';
+import { C, lerp, isFin } from './complex.js';
 
 // proj: w → [x, y]（屏幕坐标）或 null；W/H 用于跳过远在屏幕外的线段
-export function mapCurve(f, zs, proj, { tol = 2.5, jump = 60, maxDepth = 10, W = 1e4, H = 1e4, budget = 30000 } = {}) {
+export function mapCurve(f, zs, proj, { tol = 2.5, jump = 60, maxDepth = 10, W = 1e4, H = 1e4, budget = 30000, flatness = null } = {}) {
   const out = [];
   let count = 0;
   const M = 200;
@@ -11,7 +11,7 @@ export function mapCurve(f, zs, proj, { tol = 2.5, jump = 60, maxDepth = 10, W =
   function rec(z0, w0, s0, z1, w1, s1, depth) {
     if (s0 && s1) {
       const d = Math.hypot(s1[0] - s0[0], s1[1] - s0[1]);
-      if (d < tol || off(s0, s1) && depth > 3) { out.push(w1); return; }
+      if ((flatness === null && d < tol) || off(s0, s1) && depth > 3) { out.push(w1); return; }
       if (depth >= maxDepth || count > budget) {
         if (d > jump) out.push(null);
         out.push(w1);
@@ -24,6 +24,13 @@ export function mapCurve(f, zs, proj, { tol = 2.5, jump = 60, maxDepth = 10, W =
     }
     const zm = lerp(z0, z1, 0.5), wm = f(zm), sm = isFin(wm) ? proj(wm) : null;
     count++;
+    if (flatness !== null && s0 && s1 && sm) {
+      // 用中点到弦的距离量曲率，参数速度变化不会触发无用细分。
+      const dx = s1[0] - s0[0], dy = s1[1] - s0[1], length2 = dx * dx + dy * dy;
+      const t = length2 === 0 ? 0 : Math.max(0, Math.min(1, ((sm[0] - s0[0]) * dx + (sm[1] - s0[1]) * dy) / length2));
+      const error = Math.hypot(sm[0] - s0[0] - t * dx, sm[1] - s0[1] - t * dy);
+      if (error <= flatness && Math.hypot(s1[0] - s0[0], s1[1] - s0[1]) <= jump) { out.push(w1); return; }
+    }
     rec(z0, w0, s0, zm, wm, sm, depth + 1);
     rec(zm, wm, sm, z1, w1, s1, depth + 1);
   }
@@ -52,4 +59,11 @@ export function circlePts(c, r, n = 96, t0 = 0, t1 = 2 * Math.PI) {
     pts.push({ re: c.re + r * Math.cos(t), im: c.im + r * Math.sin(t) });
   }
   return pts;
+}
+
+// 参数曲线也走同一细分管线；中点按参数求值，圆弧不会被当作弦来细分。
+export function mapParametricCurve(f, point, t0, t1, proj, { samples = 48, knots = [], ...options } = {}) {
+  const values = Array.from({ length: samples + 1 }, (_, i) => t0 + (t1 - t0) * i / samples);
+  const ts = [...new Set([...values, ...knots.filter((t) => t > t0 && t < t1)])].sort((a, b) => a - b).map((t) => C(t));
+  return mapCurve((t) => f(point(t.re)), ts, proj, options);
 }

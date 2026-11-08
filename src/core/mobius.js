@@ -69,13 +69,14 @@ export function mobiusFlow(m) {
 
 // 把矩阵写成 TeX："\frac{az+b}{cz+d}"，尽量去掉 0/1 系数
 export function mobiusTex(m, v = 'z', d = 3) {
+  const eps = Math.min(1e-9, 0.5 * 10 ** -d);
   // 归一：让第一个非零系数（c 或 d 优先）为正实数便于阅读
   let [a, b, c, dd] = m;
-  const piv = K.abs(c) > 1e-9 ? c : dd;
+  const piv = K.abs(c) > eps ? c : dd;
   const s = K.div(K.C(1), piv);
   [a, b, c, dd] = [a, b, c, dd].map((x) => K.mul(x, s));
   const lin = (p, q) => {
-    const pz = K.abs(p) < 1e-9, qz = K.abs(q) < 1e-9;
+    const pz = K.abs(p) < eps, qz = K.abs(q) < eps;
     if (pz && qz) return '0';
     let s1 = '';
     if (!pz) { const t = texCoef(p, d); s1 = t === '1' ? v : t === '-1' ? `-${v}` : `${t}${v}`; }

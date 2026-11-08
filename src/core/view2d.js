@@ -10,7 +10,7 @@ export class PlaneView {
     this.canvas = document.createElement('canvas');
     el.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d');
-    this.opts = { axes: true, grid: true, labels: true, pannable: true, zoomable: true, ...opts };
+    this.opts = { background: '#080c18', axes: true, grid: true, labels: true, pannable: true, zoomable: true, ...opts };
     this.center = C(0, 0);
     this.ppu = 80;
     this.home = null;
@@ -78,7 +78,7 @@ export class PlaneView {
     if (this.canvas.width !== cw || this.canvas.height !== ch) { this.canvas.width = cw; this.canvas.height = ch; }
     const ctx = this.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#080c18';
+    ctx.fillStyle = this.opts.background;
     ctx.fillRect(0, 0, cw, ch);
     const r = renderer();
     const bg = this.bg?.();

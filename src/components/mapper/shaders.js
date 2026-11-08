@@ -371,3 +371,30 @@ void main() {
 }`;
   return { vs, fs };
 }
+
+// 数值映射：CPU 提供像点，片元阶段仍复用同一源图案与域着色。
+// 源坐标采用有界坐标卡，避免在无穷远附近插值巨大复数。
+export function sampledMeshShaders(chart) {
+  const vs = `#version 300 es
+precision highp float;
+uniform vec2 u_res; uniform vec2 u_center; uniform float u_ppu;
+in vec2 a_z; in vec2 a_w;
+out vec2 v_z;
+void main() {
+  v_z = a_z;
+  gl_Position = vec4((a_w - u_center) * u_ppu / (0.5 * u_res), 0.0, 1.0);
+}`;
+  const fs = `uniform vec2 u_res; uniform vec2 u_center; uniform float u_ppu;
+uniform vec2 u_chart;
+in vec2 v_z;
+out vec4 o;
+${PRELUDE}
+${PATTERN}
+void main() {
+  vec2 z = ${chart};
+  vec2 w = u_center + (gl_FragCoord.xy - 0.5 * u_res) / u_ppu;
+  vec4 p = srcPattern(z);
+  o = vec4(mix(colorOf(w), p.rgb, p.a), 1.0);
+}`;
+  return { vs, fs };
+}

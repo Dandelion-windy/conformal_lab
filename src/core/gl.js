@@ -54,7 +54,12 @@ class Renderer {
         const info = gl.getActiveUniform(p, i);
         uniforms[info.name] = { loc: gl.getUniformLocation(p, info.name), type: info.type };
       }
-      const prog = { p, uniforms, attribs: {} };
+      const attribs = {};
+      for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES); i++) {
+        const info = gl.getActiveAttrib(p, i);
+        attribs[info.name] = gl.getAttribLocation(p, info.name);
+      }
+      const prog = { p, uniforms, attribs };
       if (this.programs.size > 60) this.programs.delete(this.programs.keys().next().value);
       this.programs.set(k, prog);
       return prog;

@@ -2,11 +2,14 @@
 import * as K from '../../core/complex.js';
 import { h, select, slider, group, readouts, note, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
-import { strokePath, dot, label } from '../../core/draw.js';
+import { dot, label } from '../../core/draw.js';
 import { BCOL } from '../../core/domains.js';
 import { num } from '../../core/format.js';
 import { shell, theory } from '../common.js';
-import { SCMap, diskNgon } from './integrate.js';
+import { halfPlaneGeometry, diskGeometry, QUALITY } from './geometry.js';
+import { scheduleGeometry } from './schedule.js';
+import { CurveLayer } from '../../components/curves/index.js';
+import { SourcePlane, SampledLayer, IDENTITY_MAP } from '../../components/mapper/layers.js';
 
 const PRE = [
   { name: '等边三角形', xs: [-1, 0, 1], al: [1 / 3, 1 / 3, 1 / 3] },
@@ -64,147 +67,148 @@ function mountSC(stage, panel) {
   const zv = new PlaneView(b1, { title: '<b>z</b>：上半平面与前顶点 x_k' });
   const wv = new PlaneView(b2, { title: '<b>w = f(z)</b>：多边形' });
   zv.setHome(0, 1.5, 3.4); wv.setHome(0, 0, 1.8);
-  const s = { pi: 0, xs: [], al: [], n: 5, grid: true };
-  let geo = null;   // { zs, ws, nu, nv, verts, segs }
+  const source = new SourcePlane(zv), image = new SampledLayer(wv);
+  source.setMap(IDENTITY_MAP);
+  source.pattern.lines = image.pattern.lines = false;
+  const s = { pi: 0, xs: [], al: [], n: 5, grid: true, fill: true };
+  let geo = null, sourceKey = null, fit = false;
+  const sourceGrid = new CurveLayer(), imageGrid = new CurveLayer();
+  const sourceBoundary = new CurveLayer(), imageBoundary = new CurveLayer();
+  const scheduler = scheduleGeometry(computeNow);
   const col = (i) => BCOL[i % BCOL.length];
 
-  const drawGrid = (ctx, v, P, nu, nv, step = 6) => {
-    if (!s.grid) return;
-    for (let j = 0; j <= nv; j += step) strokePath(ctx, v, P.slice(j * (nu + 1), (j + 1) * (nu + 1)), { color: 'rgba(255,213,79,0.55)', width: 1, casing: false, maxJump: 1e9 });
-    for (let i = 0; i <= nu; i += step) { const c = []; for (let j = 0; j <= nv; j++) c.push(P[j * (nu + 1) + i]); strokePath(ctx, v, c, { color: 'rgba(92,200,255,0.55)', width: 1, casing: false, maxJump: 1e9 }); }
-  };
+  function gridCurves(side) {
+    return geo.lines.map((L) => {
+      const style = { color: L.family ? 'rgba(255,213,79,0.65)' : 'rgba(92,200,255,0.65)', width: 1, casing: false };
+      if (side === 'z' && !geo.disk) {
+        const p = L.point(L.t0);
+        return L.family ? { kind: 'line', origin: p, direction: K.ONE, style }
+          : { kind: 'line', origin: K.C(p.re), direction: K.I, range: [0, Infinity], style };
+      }
+      return { point: side === 'z' ? L.point : L.image, t0: L.t0, t1: L.t1,
+        options: { samples: geo.quality.samples, flatness: geo.quality.flatness }, style };
+    });
+  }
   zv.overlays.push((ctx, v) => {
     if (!geo) return;
-    drawGrid(ctx, v, geo.zs, geo.nu, geo.nv);
-    if (geo.disk) {
-      strokePath(ctx, v, Array.from({ length: 241 }, (_, k) => K.cis((2 * Math.PI * k) / 240)), { color: '#ffb454', width: 3 });
-      for (let k = 0; k < s.n; k++) { const z = K.cis((2 * Math.PI * k) / s.n); dot(ctx, v, z, col(k), 5); }
-      return;
-    }
-    const xs = s.xs, b = v.bounds();
-    const ends = [b.xmin - 1, ...xs, b.xmax + 1];
-    for (let k = 0; k < ends.length - 1; k++) strokePath(ctx, v, [K.C(ends[k]), K.C(ends[k + 1])], { color: col(k), width: 3.4 });
+    if (s.grid) sourceGrid.draw(ctx, v);
+    sourceBoundary.draw(ctx, v);
+    if (geo.disk) for (let k = 0; k < s.n; k++) dot(ctx, v, K.cis(2 * Math.PI * k / s.n), col(k), 5);
   });
   wv.overlays.push((ctx, v) => {
     if (!geo) return;
-    drawGrid(ctx, v, geo.ws, geo.nu, geo.nv);
-    for (const sg of geo.segs) strokePath(ctx, v, sg.pts, { color: sg.color, width: 3.4, maxJump: 1e9 });
-    geo.verts.forEach(([w, t], k) => {
+    if (s.grid) imageGrid.draw(ctx, v);
+    imageBoundary.draw(ctx, v);
+    const vertices = geo.vertices.map((w, k) => [w, geo.disk ? `w${k + 1}` : `w${k + 1} (${ANGLE(s.al[k])})`]);
+    if (!geo.disk && geo.S.alInf > 0 && Math.abs(geo.S.alInf - 1) > 1e-6) vertices.push([geo.infinity, `f(∞) (${ANGLE(geo.S.alInf)})`]);
+    vertices.forEach(([w, text], k) => {
       if (!K.isFin(w)) return;
       dot(ctx, v, w, '#fff', 4.5);
-      const [x, y] = v.toScreen(w); label(ctx, x + 8, y - 10, t, k === geo.verts.length - 1 && geo.infVertex ? '#ff6b9a' : '#fff');
+      const [x, y] = v.toScreen(w); label(ctx, x + 8, y - 10, text, k === geo.vertices.length ? '#ff6b9a' : '#fff');
     });
   });
 
   const preSel = select({ label: '多边形', options: PRE.map((p, i) => ({ value: i, label: p.name })), value: 0, onChange: (v) => load(+v) });
   const sliders = h('div', { class: 'ctl-group', style: 'border:0;padding:0' });
-  const nSl = slider({ label: '边数 n', min: 3, max: 10, step: 1, value: s.n, fmt: (x) => String(x), onInput: (x) => { s.n = x; compute(); } });
-  const tG = toggle({ label: '坐标网格的像', value: s.grid, onChange: (x) => { s.grid = x; zv.redraw(); wv.redraw(); } });
+  const nSl = slider({ label: '边数 n', min: 3, max: 10, step: 1, value: s.n, fmt: String, onInput: (x) => { s.n = x; compute(true); } });
+  const tG = toggle({ label: '坐标网格的像', value: s.grid, onChange: (x) => { s.grid = x; redraw(); } });
+  const tF = toggle({ label: '区域填色', value: s.fill, onChange: (x) => { s.fill = x; source.pattern.fill = image.pattern.fill = x; image.setMesh(x ? geo.mesh : null, geo.chart); redraw(); } });
   const fBox = h('div', { class: 'formula-box' });
   const ro = readouts([['inf', 'z = ∞ 的像'], ['sum', '内角和'], ['side', '边长']]);
-  const tip = note('拖动左图实轴上的白色前顶点。每段彩色实轴区间映为同色的边。黄线（水平线 Im z = c）与蓝线（竖直线 Re z = c）是上半平面坐标网格的像，它们在多边形内部保持正交。');
-  panel.append(group('选择', preSel.el, nSl.el, tG.el), group('内角 α_k π', sliders), group('公式', fBox), group('读数', ro.el), group('说明', tip));
+  const tip = note('拖动左图实轴上的白色前顶点。每段彩色实轴区间映为同色的边。黄线与蓝线是源坐标网格的像，在区域内部保持正交。两侧棋盘格的填色来自同一个源点，颜色对应。滚轮缩放、拖动空白处平移。');
+  panel.append(group('选择', preSel.el, nSl.el, tG.el, tF.el), group('内角 α_k π', sliders), group('公式', fBox), group('读数', ro.el), group('说明', tip));
   renderMath(panel);
+  sliders.addEventListener('change', () => compute());
+  nSl.input.addEventListener('change', () => compute());
 
+  function redraw() { zv.redraw(); wv.redraw(); }
   function load(i) {
     s.pi = i;
     const p = PRE[i];
     nSl.el.hidden = !p.disk;
     zv.handles = [];
     sliders.innerHTML = '';
+    source.setSource({ mask: p.disk ? 'dot(z, z) < 1.0' : 'z.y > 0.0' });
     if (p.disk) {
       zv.titleEl.innerHTML = '<b>z</b>：单位圆盘，前顶点为 n 次单位根';
       zv.setHome(0, 0, 1.3);
+      source.pattern.grid = image.pattern.grid = 'polar';
       sliders.append(note('正 n 边形的每个内角都是 (1 − 2/n)π。'));
     } else {
       zv.titleEl.innerHTML = '<b>z</b>：上半平面与前顶点 x_k';
       s.xs = [...p.xs]; s.al = [...p.al];
+      source.pattern.grid = image.pattern.grid = 'cart';
       zv.setHome(0, 1.5, Math.max(3.4, Math.max(...s.xs.map(Math.abs)) * 1.3));
       s.xs.forEach((_, k) => {
         zv.handles.push({ color: '#fff', r: 7, label: () => `x${k + 1}`, pos: () => K.C(s.xs[k]), move: (z) => {
           const lo = k > 0 ? s.xs[k - 1] + 0.05 : -1e3, hi = k < s.xs.length - 1 ? s.xs[k + 1] - 0.05 : 1e3;
-          s.xs[k] = Math.min(hi, Math.max(lo, z.re)); compute();
-        } });
-        const sl = slider({ label: `α${k + 1}（前顶点 x${k + 1}）`, min: 0, max: 2, step: 1 / 120, value: s.al[k], fmt: (x) => `${num(x, 3)} · π = ${ANGLE(x)}`, onInput: (x) => { s.al[k] = x; compute(); } });
-        sliders.append(sl.el);
+          s.xs[k] = Math.min(hi, Math.max(lo, z.re)); compute(true);
+        }, release: () => compute() });
+        sliders.append(slider({ label: `α${k + 1}（前顶点 x${k + 1}）`, min: 0, max: 2, step: 1 / 120, value: s.al[k],
+          fmt: (x) => `${num(x, 3)} · π = ${ANGLE(x)}`, onInput: (x) => { s.al[k] = x; compute(true); } }).el);
       });
     }
+    renderMath(sliders);
     fit = true;
     compute();
   }
-  let pending = 0, fit = false;
-  function compute() {
-    if (pending) return;
-    pending = requestAnimationFrame(() => { pending = 0; computeNow(); });
+  function compute(interactive = false) {
+    if (interactive) scheduler.request();
+    else scheduler.finish();
   }
-  function computeNow() {
-    const p = PRE[s.pi];
+  function computeNow(interactive) {
+    const p = PRE[s.pi], quality = interactive ? QUALITY.interactive : QUALITY.settled;
+    geo = p.disk ? diskGeometry(s.n, quality) : halfPlaneGeometry(s.xs, s.al, quality);
+    if (sourceKey !== geo.sourceKey) {
+      sourceGrid.setCurves(gridCurves('z'));
+      sourceKey = geo.sourceKey;
+    }
+    imageGrid.setCurves(gridCurves('w'));
+    sourceBoundary.setCurves(geo.disk ? [{ kind: 'circle', center: K.ZERO, radius: 1, style: { color: '#ffb454', width: 3 } }]
+      : Array.from({ length: s.xs.length + 1 }, (_, k) => {
+        const style = { color: col(k), width: 3.4 };
+        if (k === 0) return { kind: 'line', origin: K.C(s.xs[0]), direction: K.ONE, range: [-Infinity, 0], style };
+        if (k === s.xs.length) return { kind: 'line', origin: K.C(s.xs[k - 1]), direction: K.ONE, range: [0, Infinity], style };
+        return { kind: 'line', origin: K.C(s.xs[k - 1]), direction: K.C(s.xs[k] - s.xs[k - 1]), range: [0, 1], style };
+      }));
+    imageBoundary.setCurves(geo.boundary.map(({ a, b, origin, direction }, k) => {
+      const style = { color: geo.disk ? '#ffb454' : col(k), width: 3.4 };
+      if (K.isFin(a) && K.isFin(b)) return { kind: 'line', origin: a, direction: K.sub(b, a), range: [0, 1], style };
+      if (K.isFin(a)) return { kind: 'line', origin: a, direction, range: [0, Infinity], style };
+      if (K.isFin(b)) return { kind: 'line', origin: b, direction: K.neg(direction), range: [0, Infinity], style };
+      return { kind: 'line', origin, direction, style };
+    }));
+    image.uniforms = { u_chart: geo.chartUniform };
+    image.setMesh(s.fill ? geo.mesh : null, geo.chart);
+    // KaTeX 与读数不参与拖动中的几何计算，结束后按最终参数更新。
+    if (interactive) { redraw(); return; }
     if (p.disk) {
-      const n = s.n, nr = 50, nt = 12 * n;
-      const R = Array.from({ length: nr + 1 }, (_, i) => 0.9995 * (1 - (1 - i / nr) ** 1.6));
-      const T = Array.from({ length: nt + 1 }, (_, j) => (2 * Math.PI * j) / nt);
-      const { pos, verts } = diskNgon(n, R, T);
-      const zs = [];
-      for (let j = 0; j <= nt; j++) for (let i = 0; i <= nr; i++) zs.push(K.polar(R[i], T[j]));
-      // 网格：此处 nu = nr（沿射线），nv = nt（角度）
-      const sc = 1.6 / K.abs(verts[0]);
-      geo = { disk: true, zs, ws: pos.map((w) => K.scale(w, sc)), nu: nr, nv: nt, verts: verts.map((v, k) => [K.scale(v, sc), `w${k + 1}`]), segs: [] };
-      const bd = []; for (let j = 0; j <= nt; j++) bd.push(geo.ws[j * (nr + 1) + nr]);
-      geo.segs.push({ pts: bd, color: '#ffb454' });
-      setTex(fBox, `f(z)=\\int_0^z\\frac{d\\zeta}{(1-\\zeta^{${n}})^{2/${n}}}`, true);
-      if (fit) { wv.setHome(0, 0, 2); fit = false; }
-      ro.set('inf', '—'); ro.set('sum', `${n} × ${ANGLE(1 - 2 / n)} = ${ANGLE(n - 2)}`);
-      ro.set('side', num(K.abs(K.sub(geo.verts[0][0], geo.verts[1][0]))));
-      zv.redraw(); wv.redraw();
-      return;
-    }
-    const S = new SCMap(s.xs, s.al);
-    S.normalize();
-    const nu = 120, nv = 60, L = S.L;
-    const X = Array.from({ length: nu + 1 }, (_, i) => S.c + L * 1.2 * Math.tan((i / nu - 0.5) * Math.PI * 0.97));
-    const Y = Array.from({ length: nv + 1 }, (_, j) => L * (1e-4 + 1.2 * Math.tan((j / nv) * Math.PI * 0.485)));
-    const ws = S.grid(X, Y);
-    const zs = [];
-    for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) zs.push(K.C(X[i], Y[j]));
-    // 边界：最底一行按前顶点分段着色
-    const segs = [];
-    let k = 0, cur = [];
-    for (let i = 0; i <= nu; i++) {
-      while (k < s.xs.length && X[i] > s.xs[k]) {
-        const vk = S.apply(S.vertex(k)), fin = K.isFin(vk);
-        if (fin) cur.push(vk);
-        segs.push({ pts: cur, color: col(k) });
-        cur = fin ? [vk] : [];
-        k++;
+      setTex(fBox, `f(z)=\\int_0^z\\frac{d\\zeta}{(1-\\zeta^{${s.n}})^{2/${s.n}}}`, true);
+      if (fit) wv.setHome(0, 0, 2);
+      ro.set('inf', '—'); ro.set('sum', `${s.n} × ${ANGLE(1 - 2 / s.n)} = ${ANGLE(s.n - 2)}`);
+    } else {
+      const ai = geo.S.alInf;
+      const fac = s.xs.map((x, j) => {
+        const b = s.al[j] - 1; if (Math.abs(b) < 1e-9) return '';
+        const base = Math.abs(x) < 1e-9 ? '\\zeta' : `(\\zeta${x < 0 ? '+' : '-'}${num(Math.abs(x), 2)})`;
+        return `${base}^{${num(b, 3)}}`;
+      }).join('');
+      setTex(fBox, `f(z)=A\\int^z ${fac || '1'}\\,d\\zeta+B`, true);
+      ro.set('inf', Math.abs(ai - 1) < 1e-6 ? '边上的普通点（α∞ = 1）' : ai <= 0 ? `无穷远（α∞ = ${num(ai, 3)}）` : `顶点 f(∞)，内角 ${ANGLE(ai)}`);
+      ro.set('sum', ANGLE(s.al.reduce((a, b) => a + b, 0) + (Math.abs(ai - 1) < 1e-6 ? 0 : ai)));
+      if (fit) {
+        let points = [...geo.vertices, geo.infinity].filter(K.isFin);
+        if (points.length < 2) points = [K.C(geo.S.c, geo.S.L), K.C(geo.S.c - geo.S.L, geo.S.L), K.C(geo.S.c + geo.S.L, geo.S.L), K.C(geo.S.c, 3 * geo.S.L)].map(geo.evaluate);
+        const X = points.map((w) => w.re), Y = points.map((w) => w.im);
+        const x0 = Math.min(...X), x1 = Math.max(...X), y0 = Math.min(...Y), y1 = Math.max(...Y);
+        wv.setHome((x0 + x1) / 2, (y0 + y1) / 2, Math.max(0.5, 0.7 * Math.max(x1 - x0, y1 - y0)));
       }
-      cur.push(ws[i]);
     }
-    segs.push({ pts: cur, color: col(k) });
-    const verts = s.xs.map((_, j) => [S.apply(S.vertex(j)), `w${j + 1} (${ANGLE(s.al[j])})`]);
-    const ai = S.alInf, infV = ai > 1e-9 && Math.abs(ai - 1) > 1e-6;
-    if (infV) verts.push([S.apply(S.vertexInf()), `f(∞) (${ANGLE(ai)})`]);
-    geo = { zs, ws, nu, nv, verts, segs, infVertex: infV };
-    if (fit) {
-      // 视图适配：有限顶点的包围盒；顶点不足时用 |z| 不太大的网格点
-      let pts = verts.map((v) => v[0]).filter(K.isFin);
-      if (pts.length < 2) pts = ws.filter((w, idx) => K.isFin(w) && K.abs(K.sub(zs[idx], K.C(S.c))) < 3 * L);
-      const xs_ = pts.map((w) => w.re), ys_ = pts.map((w) => w.im);
-      const x0 = Math.min(...xs_), x1 = Math.max(...xs_), y0 = Math.min(...ys_), y1 = Math.max(...ys_);
-      wv.setHome((x0 + x1) / 2, (y0 + y1) / 2, Math.max(0.5, 0.62 * Math.max(x1 - x0, y1 - y0)));
-      fit = false;
-    }
-    const fac = s.xs.map((x, j) => {
-      const b = s.al[j] - 1; if (Math.abs(b) < 1e-9) return '';
-      const base = Math.abs(x) < 1e-9 ? '\\zeta' : `(\\zeta${x < 0 ? '+' : '-'}${num(Math.abs(x), 2)})`;
-      return `${base}^{${num(b, 3)}}`;
-    }).join('');
-    setTex(fBox, `f(z)=A\\int^z ${fac || '1'}\\,d\\zeta+B`, true);
-    ro.set('inf', Math.abs(ai - 1) < 1e-6 ? '边上的普通点（α∞ = 1）' : ai <= 1e-9 ? `无穷远（α∞ = ${num(ai, 3)}）` : `顶点 f(∞)，内角 ${ANGLE(ai)}`);
-    ro.set('sum', `${ANGLE(s.al.reduce((p, q) => p + q, 0) + (Math.abs(ai - 1) < 1e-6 ? 0 : ai))}`);
-    const fv = verts.map((v) => v[0]).filter(K.isFin);
-    ro.set('side', fv.length >= 2 ? fv.map((v, j) => num(K.abs(K.sub(fv[(j + 1) % fv.length], v)), 3)).join('，') : '—');
-    zv.redraw(); wv.redraw();
+    const edges = geo.boundary.filter(({ a, b }) => K.isFin(a) && K.isFin(b));
+    ro.set('side', edges.length ? edges.map(({ a, b }) => num(K.dist(a, b), 3)).join('，') : '无界边');
+    fit = false;
+    redraw();
   }
   load(0);
-  return { redraw() { zv.redraw(); wv.redraw(); } };
+  return { redraw };
 }

@@ -58,7 +58,7 @@ export function resolveSource(M) {
 }
 
 // 参数网格 (u,v) ∈ [0,1]²；a_h 取到相邻顶点的最大距离（局部格子尺寸）
-export function gridMesh(param, nu, nv) {
+export function gridMesh(param, nu, nv, map = null) {
   const N = (nu + 1) * (nv + 1), z = new Float32Array(2 * N), hh = new Float32Array(N), P = new Array(N);
   for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) P[j * (nu + 1) + i] = param(i / nu, j / nv);
   const at = (i, j) => P[Math.min(nv, Math.max(0, j)) * (nu + 1) + Math.min(nu, Math.max(0, i))];
@@ -75,7 +75,9 @@ export function gridMesh(param, nu, nv) {
     const a = j * (nu + 1) + i, b = a + 1, c = a + nu + 2, e = a + nu + 1;
     idx.push(a, b, c, a, c, e);
   }
-  return { z, h: hh, idx: new Uint32Array(idx) };
+  const data = { z, h: hh, idx: new Uint32Array(idx) };
+  if (map) data.w = Float32Array.from(P.flatMap((p) => { const w = map(p); return [w.re, w.im]; }));
+  return data;
 }
 
 // 整个平面：ln|z| ∈ [−30, 30]（|z| = 1 附近最密）、arg z ∈ [0, 2π] 的对数极坐标网格

@@ -1,11 +1,11 @@
 // 第 3 章 · 标签 2：圆与直线的像——特殊位置、几何上的理由、保对称性
 import * as K from '../../core/complex.js';
-import { h, select, segmented, toggle, button, group, readouts, note, renderMath } from '../../core/ui.js';
+import { h, select, segmented, button, group, readouts, note, renderMath } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
 import { reflect, invertGC } from '../../core/circle.js';
 import { dot } from '../../core/draw.js';
 import { num, deg } from '../../core/format.js';
-import { COL, gammaOf, gammaHandles, foldBg, drawGC, seg, fullLine, rightMark, tag, pencilGC, describeGC } from './common.js';
+import { COL, gammaOf, gammaHandles, drawGC, seg, fullLine, rightMark, tag, pencilGC, describeGC } from './common.js';
 
 const unit = (z) => K.scale(z, 1 / (K.abs(z) || 1));
 const diam = (O, A) => ({ line: false, c: K.lerp(O, A, 0.5), r: K.dist(O, A) / 2 });
@@ -22,7 +22,7 @@ const PRE = [
   { id: 'lineO', name: '过 O 的直线 → 自身', def: { D: K.C(1.6, 0.8), u: 0.5 },
     tip: '射线上的点仍在这条射线上，只是 $|OP|\\mapsto R^2/|OP|$：Γ 内的一段与 Γ 外的一段互换，直线整体不变。' },
   { id: 'conc', name: '与 Γ 同心的圆 → 同心圆', def: { rc: K.C(0.55, 0.3), t: 0.5 },
-    tip: '半径 $r\\mapsto R^2/r$。以 O 为中心的同心圆与射线组成的网格整体不变，只是内外翻转，背景的折叠着色就是这样。' },
+    tip: '半径 $r\\mapsto R^2/r$。以 O 为中心的同心圆与射线组成的网格整体不变，只是内外翻转。' },
   { id: 'orth', name: '与 Γ 正交的圆 → 自身', def: { oc: K.C(1.7, 0.7), D: K.C(1.5, 0.35) },
     tip: 'C ⊥ Γ ⟺ 交点 T 处两条半径垂直 ⟺ OT 与 C 相切且 $|OT|=R$ ⟹ O 对 C 的幂是 $R^2$。过 O 的直线交 C 于 P、Q 时 $|OP|\\cdot|OQ|=R^2$，即 $Q=P^*$：C 整体不动，Γ 内外两段弧互换。' },
   { id: 'pair', name: '两个过 O 的圆 → 两条直线', def: { A1: K.C(0.6, 0.8), A2: K.C(0.9, -0.45) },
@@ -31,11 +31,10 @@ const PRE = [
 
 export function mountCircles(stage, panel) {
   const box = h('div'); stage.append(box);
-  const v = new PlaneView(box, { title: '<span class="c-amb">C</span> 与它关于 <span class="c-violet">Γ</span> 的反演像 <span class="c-acc">C*</span>', unitCircle: false });
+  const v = new PlaneView(box, { title: '<span class="c-amb">C</span> 与它关于 <span class="c-violet">Γ</span> 的反演像 <span class="c-acc">C*</span>', unitCircle: false, background: '#000' });
   v.setHome(0.4, 0, 2.8);
-  const s = { O: K.C(0), rp: K.polar(1.2, -2.3), pre: 0, over: 'proof', bg: true, z1: K.C(1.0, 1.5), t: 0, u: 0, ...PRE[0].def };
+  const s = { O: K.C(0), rp: K.polar(1.2, -2.3), pre: 0, over: 'proof', z1: K.C(1.0, 1.5), t: 0, u: 0, ...PRE[0].def };
   const G = () => gammaOf(s), f = (z) => reflect(G(), z), P0 = () => PRE[s.pre];
-  foldBg(v, G, () => s.bg);
   const srcs = () => {
     const O = s.O;
     switch (P0().id) {
@@ -155,13 +154,12 @@ export function mountCircles(stage, panel) {
   );
   const preSel = select({ label: 'C 的位置', options: PRE.map((p, i) => ({ value: i, label: p.name })), value: 0, onChange: (x) => load(+x) });
   const overSeg = segmented({ label: '叠加', options: [{ value: 'proof', label: '为什么' }, { value: 'sym', label: '对称点' }, { value: 'none', label: '无' }], value: s.over, onChange: (x) => { s.over = x; update(); } });
-  const tG = toggle({ label: '折叠着色', value: s.bg, onChange: (x) => { s.bg = x; v.redraw(); } });
   const tangentBtn = button('让两圆在 O 相切', () => { s.A2 = K.add(s.O, K.scale(K.sub(s.A1, s.O), 0.6)); update(); }, 'small');
   const ro = readouts([['C', 'C'], ['Cs', 'C*'], ['x', '读数'], ['chk', '保对称']]);
   const tip = note('');
   const symTip = note('<b>保对称</b>：$z_1,z_2$ 关于 C 对称 ⟺ 过它们的圆（绿）都与 C 正交。反演保圆、保角，这些圆的像（蓝）都过 $z_1^*,z_2^*$ 且与 $C^*$ 正交，所以 $z_1^*,z_2^*$ 关于 $C^*$ 对称。整个过程不需要计算。', 'good');
   panel.append(
-    group('设置', preSel.el, overSeg.el, tG.el, tangentBtn),
+    group('设置', preSel.el, overSeg.el, tangentBtn),
     group('读数', ro.el),
     group('为什么', tip, symTip),
   );

@@ -1,6 +1,5 @@
-// 第 3 章 反演 · 共用：反演圆 Γ、折叠着色背景、作图小工具
+// 第 3 章 反演 · 共用：反演圆 Γ、作图小工具
 import * as K from '../../core/complex.js';
-import { renderer, mobiusShader, matUniforms } from '../../core/gl.js';
 import { sampleGC } from '../../core/circle.js';
 import { mapCurve } from '../../core/mapcurve.js';
 import { strokePath, label } from '../../core/draw.js';
@@ -16,16 +15,6 @@ export function gammaHandles(s, update) {
     { color: COL.gamma, r: 7, label: 'O', pos: () => s.O, move: (z) => { s.rp = K.add(s.rp, K.sub(z, s.O)); s.O = z; update(); } },
     { color: '#d6c8ff', r: 5, pos: () => s.rp, move: (z) => { if (K.dist(z, s.O) > 0.05) s.rp = z; update(); } },
   ];
-}
-
-// 背景：以 O 为中心的极坐标棋盘格，Γ 内的点取其反演点的颜色——同色的两点互为反演
-let foldProg;
-export function foldBg(view, G, on) {
-  if (foldProg === undefined) foldProg = renderer().ok ? renderer().program(mobiusShader('dot(m, m) < 1.0 ? m / dot(m, m) : m')) : null;
-  view.bg = () => {
-    const g = G(), k = 1 / g.r;
-    return { prog: on() ? foldProg : null, uniforms: { u_colorMode: 3, u_bright: 0.36, u_lines: 0, u_lineStep: 0.5, ...matUniforms([K.C(k), K.scale(K.neg(g.c), k), K.ZERO, K.ONE]) } };
-  };
 }
 
 // 广义圆及其在 f 下的像（自适应细分，经过 ∞ 时自动断开）

@@ -1,12 +1,14 @@
-// 第 4 章 · 标签 4：不动点、乘子与分类（椭圆 / 双曲 / 斜驶 / 抛物），轨道与流线
+// 第 4 章 · 标签 3：不动点、乘子与分类（椭圆 / 双曲 / 斜驶 / 抛物），轨道与流线
 import * as K from '../../core/complex.js';
 import { h, slider, segmented, group, readouts, note, setTex, renderMath, toggle } from '../../core/ui.js';
 import { PlaneView } from '../../core/view2d.js';
 import { renderer, mobiusShader, matUniforms } from '../../core/gl.js';
 import { mobiusTex, classify } from '../../core/mobius.js';
-import { strokePath, dot, label } from '../../core/draw.js';
+import { dot, label } from '../../core/draw.js';
 import { cx, num, deg, texCx } from '../../core/format.js';
 import { player } from '../common.js';
+import { CurveLayer } from '../../components/curves/index.js';
+import { createFlow } from './flow.js';
 
 const TYPES = [
   { value: 'ell', label: '椭圆型', k: [1, 1.0] },
@@ -21,45 +23,31 @@ export function mountDynamics(stage, panel) {
   v.setHome(0, 0, 2.6);
   const s = { type: 'lox', p: K.C(-0.9, 0.2), q: K.C(1, -0.3), rho: 1.8, th: 0.9, beta: K.C(0.6, 0.5), z0: K.C(0.2, 0.9), t: 0, flow: true, orbit: true };
   // S: 把不动点送到 0, ∞（抛物型：p → ∞）
-  let S, Si, M, D;
+  let S, Si, M, D, rate, flow, orbitSeed, nextPoint, orbitPoints = [];
+  const flowLines = new CurveLayer(), orbitLine = new CurveLayer();
   // 流 T_t = S⁻¹ ∘ D_t ∘ S
-  const Dt = (t) => (s.type === 'par' ? [K.ONE, K.scale(s.beta, t), K.ZERO, K.ONE] : [K.exp(K.scale(K.log(kval()), t)), K.ZERO, K.ZERO, K.ONE]);
+  const Dt = (t) => (s.type === 'par' ? [K.ONE, K.scale(s.beta, t), K.ZERO, K.ONE] : [K.exp(K.scale(rate, t)), K.ZERO, K.ZERO, K.ONE]);
   const kval = () => (s.type === 'ell' ? K.cis(s.th) : s.type === 'hyp' ? K.C(s.rho) : K.polar(s.rho, s.th));
   const Tt = (t) => K.matMul(Si, K.matMul(Dt(t), S));
   const prog = renderer().ok ? renderer().program(mobiusShader()) : null;
   // 背景：在共轭坐标 ζ = S(T_t⁻¹ z) 下的棋盘格——格线是不变圆族（阿波罗尼斯圆与施泰纳圆）
   v.bg = () => {
-    const B = K.matMul(S, K.matInv(Tt(s.t)));
+    const B = K.matMul(Dt(-s.t), S);
     return { prog, uniforms: { u_colorMode: s.type === 'par' ? 2 : 3, u_bright: 0.62, u_lines: 0, u_lineStep: 0.5, ...matUniforms(B) } };
   };
   v.overlays.push((ctx, view) => {
-    if (s.flow) {
-      // 若干条流线：T_t(z) 对 t ∈ ℝ
-      const seeds = [];
-      if (s.type === 'par') { const n = K.mul(K.I, K.scale(s.beta, 1 / (K.abs(s.beta) || 1))); for (let k = -6; k <= 6; k++) seeds.push(K.mobius(Si, K.scale(n, k * 0.35))); }
-      else if (s.type === 'ell') for (let k = -5; k <= 5; k++) seeds.push(K.mobius(Si, K.C(2 ** (k / 2))));
-      else for (let k = 0; k < 12; k++) seeds.push(K.mobius(Si, K.cis((k * Math.PI) / 6)));
-      for (const z of seeds) {
-        const pts = [];
-        for (let i = -200; i <= 200; i++) pts.push(K.mobius(Tt(i / 20), z));
-        strokePath(ctx, view, pts, { color: 'rgba(255,255,255,0.45)', width: 1.1, casing: false, maxJump: 120 });
-      }
-    }
+    if (s.flow) flowLines.draw(ctx, view);
     if (s.orbit) {
-      const pts = [], orb = [];
-      for (let i = -300; i <= 300; i++) pts.push(K.mobius(Tt(i / 30), s.z0));
-      strokePath(ctx, view, pts, { color: '#ffb454', width: 2, maxJump: 160 });
-      for (let n = -12; n <= 12; n++) orb.push([n, K.mobius(Tt(n), s.z0)]);
-      for (const [n, z] of orb) if (n !== 0) dot(ctx, view, z, n > 0 ? '#ffb454' : '#7a5a30', n > 0 ? 3.6 : 3);
-      const z1 = K.mobius(M, s.z0);
-      if (K.isFin(z1)) { const [x, y] = view.toScreen(z1); label(ctx, x + 7, y - 9, 'T(z₀)', '#ffb454'); }
+      orbitLine.draw(ctx, view);
+      for (const [n, z] of orbitPoints) if (n !== 0) dot(ctx, view, z, n > 0 ? '#ffb454' : '#7a5a30', n > 0 ? 3.6 : 3);
+      if (K.isFin(nextPoint)) { const [x, y] = view.toScreen(nextPoint); label(ctx, x + 7, y - 9, 'T(z₀)', '#ffb454'); }
     }
-    const zt = K.mobius(Tt(s.t), s.z0);
+    const zt = flow.at(orbitSeed, s.t);
     dot(ctx, view, zt, '#ffffff', 4);
   });
   const fixH = (key, lab) => ({ color: '#6ee7a8', r: 7, label: lab, hidden: () => key === 'q' && s.type === 'par', pos: () => s[key], move: (z) => { s[key] = z; update(); } });
   v.handles.push(fixH('p', 'p'), fixH('q', 'q'),
-    { color: '#ffb454', r: 6, label: 'z₀', pos: () => s.z0, move: (z) => { s.z0 = z; update(); } },
+    { color: '#ffb454', r: 6, label: 'z₀', pos: () => s.z0, move: (z) => { s.z0 = z; updateOrbit(); v.redraw(); } },
     { color: '#5cc8ff', r: 6, label: 'β', hidden: () => s.type !== 'par', pos: () => K.add(s.p, s.beta), move: (z) => { s.beta = K.sub(z, s.p); update(); } });
 
   const typeSeg = segmented({ label: '类型', options: TYPES, value: s.type, onChange: (val) => { s.type = val; const T = TYPES.find((x) => x.value === val); if (T.k) { s.rho = T.k[0]; s.th = T.k[1]; rhoSl.value = s.rho; thSl.value = s.th; } update(); } });
@@ -78,6 +66,12 @@ export function mountDynamics(stage, panel) {
     group('解释', expl),
   );
   renderMath(panel);
+  function updateOrbit() {
+    orbitSeed = K.mobius(S, s.z0);
+    orbitLine.setCurves(flow.curves(orbitSeed).map((curve) => ({ ...curve, style: { color: '#ffb454', width: 2 } })));
+    orbitPoints = Array.from({ length: 25 }, (_, i) => [i - 12, flow.at(orbitSeed, i - 12)]);
+    nextPoint = flow.at(orbitSeed, 1);
+  }
   function update() {
     const par = s.type === 'par';
     rhoSl.el.hidden = par || s.type === 'ell';
@@ -85,9 +79,15 @@ export function mountDynamics(stage, panel) {
     if (par) { S = [K.ZERO, K.ONE, K.ONE, K.neg(s.p)]; }
     else S = [K.ONE, K.neg(s.p), K.ONE, K.neg(s.q)];
     Si = K.matInv(S);
+    const k = kval();
+    // 构造中已知 |k| 与辐角，直接保留它们；椭圆型的实部应严格为零。
+    rate = par ? K.ZERO : K.C(s.type === 'ell' ? 0 : Math.log(s.rho), s.type === 'hyp' ? 0 : s.th);
     M = K.matNormalize(Tt(1));
     D = classify(M);
-    const k = kval();
+    flow = createFlow({ inverse: Si, p: s.p, q: s.q, rate, beta: s.beta, parabolic: par });
+    flowLines.setCurves(flow.seeds().flatMap(flow.curves).map((curve) => ({ ...curve,
+      style: { color: 'rgba(255,255,255,0.45)', width: 1.1, casing: false } })));
+    updateOrbit();
     setTex(fBox, par ? `\\frac{1}{T(z)-p}=\\frac{1}{z-p}+\\beta,\\quad \\beta=${texCx(s.beta)}\\\\[4pt] T(z)=${mobiusTex(M)}` : `\\frac{T(z)-p}{T(z)-q}=k\\,\\frac{z-p}{z-q},\\quad k=${texCx(k)}\\\\[4pt] T(z)=${mobiusTex(M)}`, true);
     ro.set('k', par ? '—（只有一个不动点）' : `${cx(k)}　|k| = ${num(K.abs(k))}，arg k = ${deg(K.arg(k))}`);
     ro.set('tr', cx(D.t2));

@@ -5,7 +5,7 @@
 //   极点、割线附近不会出现被拉长或错位的三角形，动画中也不会闪烁
 import { renderer } from '../../core/gl.js';
 import { SourceMeshGL } from './gpu.js';
-import { zShader, wBgShader, meshShaders, patternUniforms } from './shaders.js';
+import { zShader, wBgShader, meshShaders, sampledMeshShaders, patternUniforms } from './shaders.js';
 
 // 着色器声明了、但这些页面不用的 uniform（变形动画、选叶参考点、画板曲线）
 const FIXED = {
@@ -85,4 +85,21 @@ export function stageMixMap(fns, a, b) {
     xglsl: `xadd(xmul(xfrom(vec2(1.0 - u_pt, 0.0)), ${nest(a, 'stepX', 'Z')}), xmul(xfrom(vec2(u_pt, 0.0)), ${nest(b, 'stepX', 'Z')}))`,
     defs: stepDefs(fns), holo: allHolo(fns),
   };
+}
+
+// 没有闭式 GLSL 表达式的数值映射，和解析映射共享缓冲、着色与视图生命周期。
+export class SampledLayer extends MapLayer {
+  constructor(view) {
+    super();
+    this.mesh = new SourceMeshGL();
+    view.glLayers.push((r, v, dpr) => this.mesh.draw(r, v, dpr, this.prog, this.allUniforms()));
+  }
+  setMesh(data, chart = 'v_z') {
+    this.mesh.set(data);
+    const r = renderer();
+    if (r.ok) {
+      const { vs, fs } = sampledMeshShaders(chart);
+      this.prog = r.program(fs, vs);
+    }
+  }
 }
